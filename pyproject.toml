@@ -1,0 +1,6 @@
+name = "pdf-extractortext"
+version = "0.1.0"
+description = "Add your description here"
+readme " "README.nd"
+requieres pythin in = "3.11"
+dependencies = []
