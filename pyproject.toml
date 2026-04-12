@@ -1,6 +1,6 @@
 name = "pdf-extractortext"
 version = "0.1.0"
-description = "Add your description here"
+description = "Extraer texto de un pdf que es proporcionado por el usuario. Después se hace un resumen gracias a un modelo de IA"
 readme " "README.nd"
 requieres pythin in = ">=3.11"
 dependencies = []
