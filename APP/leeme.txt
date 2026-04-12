@@ -1,0 +1,3 @@
+Para que este programa funcione lo que debemos hacer es intalar: pdf2docx, docx2pdf, pytest
+
+Dato importante, para que funcione se debe tener word intalado, ya que la libreria docx2pdf funciona asi
