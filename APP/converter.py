@@ -19,4 +19,3 @@ def word_a_pdf(docx_path, pdf_path): #esta otra funcion se encarga de converter 
         print("Error en Word → PDF:", e)
         return False
     
-#pruebas francock
