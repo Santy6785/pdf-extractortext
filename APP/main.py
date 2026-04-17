@@ -1,32 +1,31 @@
-from converter import pdf_a_word, word_a_pdf
-from file_manager import archivo_existe
+from fastapi import FastAPI, UploadFile, File
+from converter import extraer_texto_pdf
+from file_manager import guardar_txt
 
-def main():
-    print("1: PDF a Word")
-    print("2: Word a PDF")
-
-    opcion = input("Elegí una opción: ")
-
-    origen = input("Ruta del archivo de entrada: ")
-    destino = input("Ruta del archivo de salida: ")
-
-    if not archivo_existe(origen):
-        print("El archivo no existe.")
-        return
-
-    if opcion == "1":
-        ok = pdf_a_word(origen, destino)
-    elif opcion == "2":
-        ok = word_a_pdf(origen, destino)
-    else:
-        print("Opción inválida")
-        return
-
-    if ok:
-        print("Conversión exitosa")
-    else:
-        print("Falló la conversión")
+app = FastAPI()
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+def inicio():
+    return {"mensaje": "API funcionando"}
+
+
+@app.post("/upload")
+async def subir_pdf(file: UploadFile = File(...)):
+    try:
+        # Extraer texto
+        texto = extraer_texto_pdf(file.file)
+
+        if not texto:
+            return {"error": "No se pudo extraer texto"}
+
+        # Guardar en txt (temporal, para pruebas)
+        guardar_txt(texto, "resultado.txt")
+
+        return {
+            "mensaje": "Archivo procesado correctamente",
+            "preview": texto[:200]  # solo una parte
+        }
+
+    except Exception as e:
+        return {"error": str(e)}

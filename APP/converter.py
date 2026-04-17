@@ -1,4 +1,4 @@
-from pdf2docx import Converter
+"""from pdf2docx import Converter
 from docx2pdf import convert
 
 def pdf_a_word(pdf_path, docx_path): #esta funcion se encarga de converter pdf a word 
@@ -17,4 +17,21 @@ def word_a_pdf(docx_path, pdf_path): #esta otra funcion se encarga de converter 
         return True
     except Exception as e:
         print("Error en Word → PDF:", e)
-        return False
+        return False"""
+
+from PyPDF2 import PdfReader
+
+def extraer_texto_pdf(file):
+    try:
+        reader = PdfReader(file)
+        texto = ""
+
+        for pagina in reader.pages:
+            contenido = pagina.extract_text()
+            if contenido:
+                texto += contenido
+
+        return texto
+    except Exception as e:
+        print("Error:", e)
+        return None
