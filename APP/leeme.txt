@@ -1,3 +1,0 @@
-Para que este programa funcione debes instalar: pdf2docx, docx2pdf, pytest
-
-Dato importante: para que funcione debes tener Word instalado, ya que la librería docx2pdf funciona así
