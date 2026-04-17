@@ -17,6 +17,7 @@ def word_a_pdf(docx_path, pdf_path): #esta otra funcion se encarga de converter 
         return True
     except Exception as e:
         print("Error en Word → PDF:", e)
+<<<<<<< HEAD
         return False"""
 
 from PyPDF2 import PdfReader
@@ -35,3 +36,7 @@ def extraer_texto_pdf(file):
     except Exception as e:
         print("Error:", e)
         return None
+=======
+        return False
+    
+>>>>>>> a3bcc9cbb797846b72dd492e3041b7442a995431
