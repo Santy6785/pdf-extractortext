@@ -1,18 +1,15 @@
 [project]
 name = "pdf-extractor"
 version = "0.1.0"
-<<<<<<< HEAD
-description = "API para extraer texto de PDFs y persistir en MongoDB"
+description = "API para extraer texto de PDFs con arquitectura limpia"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.5.0",
-    "pydantic-settings>=2.1.0",
-    "motor>=3.3.0",
-    "pymongo>=4.6.0",
     "pypdf>=3.17.0",
+    "python-multipart>=0.0.6",
 ]
 
 [project.optional-dependencies]
@@ -35,9 +32,3 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
-=======
-description = "Extraer texto de un pdf que es proporcionado por el usuario. Después se hace un resumen gracias a un modelo de IA"
-readme " "README.nd"
-requieres pythin in = ">=3.11"
-dependencies = []
->>>>>>> a3bcc9cbb797846b72dd492e3041b7442a995431
