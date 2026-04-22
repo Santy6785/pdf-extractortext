@@ -10,7 +10,7 @@ class TestUploadPdfEndpoint:
 
         # Act: Intentar subir el archivo
         response = client.post(
-            "/api/v1/documents/upload",
+            "/api/v1/documents/",
             files={"file": ("documento.txt", fake_file, "text/plain")}
         )
 
