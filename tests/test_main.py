@@ -24,20 +24,17 @@ class TestDocumentEndpoint:
             files={"file": ("documento.txt", fake_file, "text/plain")}
         )
 
-        # Assert: Verificar que se rechazó el archivo
+        # Assert: Verificar que se rechazo el archivo
         assert response.status_code == 400
         assert "PDF" in response.json()["detail"]
 
     def test_process_valid_pdf(self, client: TestClient):
         """
-        RED: El sistema debe procesar un PDF válido y retornar:
-        - nombre_archivo
-        - checksum (SHA-256)
-        - dimensiones_paginas
-        - texto_extraido
+        RED: El sistema debe procesar un PDF valido y retornar un archivo .txt
+        con el texto extraido descargable.
         """
-        # Arrange: Crear un PDF mínimo en memoria
-        # Este es un PDF válido de 1 página con texto "Hola Mundo"
+        # Arrange: Crear un PDF minimo en memoria
+        # Este es un PDF valido de 1 pagina con texto "Hola Mundo"
         pdf_content = self._create_minimal_pdf()
         pdf_file = io.BytesIO(pdf_content)
 
@@ -49,17 +46,15 @@ class TestDocumentEndpoint:
 
         # Assert: Verificar respuesta exitosa
         assert response.status_code == 200
-        data = response.json()
-        assert data["nombre_archivo"] == "test_document.pdf"
-        assert "checksum" in data
-        assert len(data["checksum"]) == 64  # SHA-256 es 64 caracteres hex
-        assert "dimensiones_paginas" in data
-        assert isinstance(data["dimensiones_paginas"], list)
-        assert "texto_extraido" in data
+        # La respuesta ahora es texto plano (archivo .txt)
+        assert response.headers["content-type"] == "text/plain; charset=utf-8"
+        # Verificar que el header indica que es un archivo descargable
+        assert "attachment" in response.headers.get("content-disposition", "")
+        assert "test_document.txt" in response.headers.get("content-disposition", "")
 
     def _create_minimal_pdf(self) -> bytes:
         """
-        Crea un PDF mínimo válido en memoria para testing.
+        Crea un PDF minimo valido en memoria para testing.
         Usa pypdf para generar un PDF simple.
         """
         from pypdf import PdfWriter
@@ -68,7 +63,7 @@ class TestDocumentEndpoint:
 
         writer = PdfWriter()
 
-        # Crear una página con tamaño A4 (en puntos: 595.27 x 841.89)
+        # Crear una pagina con tamaño A4 (en puntos: 595.27 x 841.89)
         page = writer.add_blank_page(width=595.27, height=841.89)
 
         # Guardar en memoria
