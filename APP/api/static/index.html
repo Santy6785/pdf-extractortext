@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extractor de Documentos PDF</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .drag-zone {
+            transition: all 0.3s ease;
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%236366F1' stroke-width='2' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+        .drag-zone.drag-over {
+            background-color: rgba(99, 102, 241, 0.1);
+            transform: scale(1.02);
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #6366f1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <svg class="h-8 w-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span class="ml-3 text-xl font-bold text-gray-900">Extractor de Documentos PDF</span>
+                </div>
+                <a href="/docs" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
+                    Documentación API
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                Extrae texto de tus PDFs
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+                Sube tu archivo PDF y obtén el texto extraído al instante. 
+                Procesamiento seguro, rápido y 100% en memoria.
+            </p>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
+            <!-- Drag & Drop Zone -->
+            <div 
+                id="dropZone"
+                class="drag-zone rounded-2xl p-12 text-center cursor-pointer"
+                onclick="document.getElementById('fileInput').click()"
+            >
+                <input 
+                    type="file" 
+                    id="fileInput" 
+                    accept=".pdf" 
+                    class="hidden"
+                    onchange="handleFileSelect(event)"
+                >
+                
+                <div class="mb-6">
+                    <svg class="mx-auto h-16 w-16 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                </div>
+                
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">
+                    Arrastra y suelta tu PDF aquí
+                </h3>
+                <p class="text-gray-500 mb-4">
+                    o haz clic para seleccionar un archivo
+                </p>
+                <p class="text-sm text-gray-400">
+                    Solo archivos PDF (máximo 10MB)
+                </p>
+            </div>
+
+            <!-- Selected File -->
+            <div id="fileInfo" class="hidden mt-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <svg class="h-8 w-8 text-indigo-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <div>
+                            <p id="fileName" class="font-medium text-gray-900"></p>
+                            <p id="fileSize" class="text-sm text-gray-500"></p>
+                        </div>
+                    </div>
+                    <button 
+                        onclick="clearFile()"
+                        class="text-gray-400 hover:text-red-500 transition-colors"
+                    >
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Process Button -->
+            <button 
+                id="processBtn"
+                onclick="processFile()"
+                disabled
+                class="w-full mt-6 bg-indigo-600 text-white font-semibold py-4 px-6 rounded-lg shadow-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+            >
+                <span id="btnText">Procesar y Extraer Texto</span>
+                <div id="btnLoader" class="loader ml-3 hidden"></div>
+            </button>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-red-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <p id="errorText" class="text-red-700 font-medium"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Metadata Card -->
+                <div class="bg-white rounded-2xl shadow-lg p-6">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-green-100 p-3 rounded-lg">
+                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="ml-3 text-lg font-semibold text-gray-900">Verificación</h3>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Checksum (SHA-256)</p>
+                            <p id="checksumValue" class="font-mono text-xs text-gray-700 break-all bg-gray-50 p-2 rounded"></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Estado</p>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Procesado correctamente
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Extracted Text Card -->
+                <div class="lg:col-span-2 bg-white rounded-2xl shadow-lg p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <div class="bg-indigo-100 p-3 rounded-lg">
+                                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="ml-3 text-lg font-semibold text-gray-900">Texto Extraído</h3>
+                        </div>
+                        <button 
+                            onclick="copyText()"
+                            class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center transition-colors"
+                        >
+                            <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                            </svg>
+                            Copiar
+                        </button>
+                    </div>
+                    
+                    <div class="relative">
+                        <textarea 
+                            id="extractedText" 
+                            readonly
+                            class="w-full h-64 p-4 bg-gray-50 rounded-lg border border-gray-200 text-gray-700 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono leading-relaxed"
+                        ></textarea>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end">
+                        <button 
+                            onclick="downloadText()"
+                            class="bg-gray-900 text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all flex items-center"
+                        >
+                            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Descargar .txt
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="text-center">
+                <div class="bg-indigo-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Rápido</h3>
+                <p class="text-gray-600">Procesamiento en segundos sin esperas innecesarias</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-indigo-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Seguro</h3>
+                <p class="text-gray-600">Procesamiento 100% en memoria, sin almacenar archivos</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-indigo-100 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-4">
+                    <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Preciso</h3>
+                <p class="text-gray-600">Extracción de texto fiel al documento original</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-gray-500 text-sm">
+                Extractor de Documentos PDF - Desarrollado con FastAPI y Arquitectura Limpia
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Variables globales
+        let selectedFile = null;
+        let extractedTextContent = '';
+        let checksumValue = '';
+
+        // Elementos del DOM
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const processBtn = document.getElementById('processBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
+        const resultsSection = document.getElementById('resultsSection');
+        const checksumDisplay = document.getElementById('checksumValue');
+        const extractedTextArea = document.getElementById('extractedText');
+
+        // Event listeners para drag and drop
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                validateAndSetFile(files[0]);
+            }
+        });
+
+        // Manejar selección de archivo
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                validateAndSetFile(file);
+            }
+        }
+
+        // Validar y establecer archivo
+        function validateAndSetFile(file) {
+            // Limpiar errores previos
+            hideError();
+            
+            // Validar tipo de archivo
+            if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+                showError('El archivo debe ser un PDF. Formato no válido.');
+                return;
+            }
+
+            // Validar tamaño (10MB máximo)
+            const maxSize = 10 * 1024 * 1024;
+            if (file.size > maxSize) {
+                showError('El archivo es demasiado grande. Tamaño máximo: 10MB.');
+                return;
+            }
+
+            selectedFile = file;
+            displayFileInfo(file);
+        }
+
+        // Mostrar información del archivo
+        function displayFileInfo(file) {
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.classList.remove('hidden');
+            processBtn.disabled = false;
+            resultsSection.classList.add('hidden');
+        }
+
+        // Formatear tamaño de archivo
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Limpiar archivo seleccionado
+        function clearFile() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            processBtn.disabled = true;
+            resultsSection.classList.add('hidden');
+            hideError();
+        }
+
+        // Mostrar error
+        function showError(message) {
+            errorText.textContent = message;
+            errorMessage.classList.remove('hidden');
+        }
+
+        // Ocultar error
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+
+        // Procesar archivo
+        async function processFile() {
+            if (!selectedFile) {
+                showError('Por favor selecciona un archivo PDF primero.');
+                return;
+            }
+
+            // Mostrar estado de carga
+            setLoading(true);
+            hideError();
+            resultsSection.classList.add('hidden');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch('/api/v1/documents/', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Error al procesar el archivo');
+                }
+
+                // Obtener el texto extraído
+                const text = await response.text();
+                extractedTextContent = text;
+
+                // Extraer checksum del header si está disponible
+                // Como el endpoint actual retorna PlainTextResponse, calculamos el checksum localmente
+                // o podríamos modificar el endpoint para retornarlo
+                checksumValue = await calculateSHA256(selectedFile);
+
+                // Mostrar resultados
+                displayResults(text, checksumValue);
+
+            } catch (error) {
+                console.error('Error:', error);
+                let errorMsg = error.message;
+                
+                // Traducir mensajes comunes de error
+                if (errorMsg.includes('PDF')) {
+                    errorMsg = 'El archivo no es un PDF válido o está corrupto.';
+                } else if (errorMsg.includes('encrypt')) {
+                    errorMsg = 'El PDF está encriptado o protegido con contraseña.';
+                } else if (errorMsg.includes('process')) {
+                    errorMsg = 'No se pudo procesar el PDF. Verifica que no esté dañado.';
+                } else if (errorMsg.includes('already exists')) {
+                    errorMsg = 'El archivo ya existe en el sistema.';
+                }
+                
+                showError(errorMsg);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // Calcular SHA-256 del archivo
+        async function calculateSHA256(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // Mostrar resultados
+        function displayResults(text, checksum) {
+            checksumDisplay.textContent = checksum;
+            extractedTextArea.value = text;
+            resultsSection.classList.remove('hidden');
+            
+            // Scroll suave a resultados
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Configurar estado de carga
+        function setLoading(isLoading) {
+            processBtn.disabled = isLoading;
+            if (isLoading) {
+                btnText.textContent = 'Procesando...';
+                btnLoader.classList.remove('hidden');
+            } else {
+                btnText.textContent = 'Procesar y Extraer Texto';
+                btnLoader.classList.add('hidden');
+            }
+        }
+
+        // Copiar texto al portapapeles
+        async function copyText() {
+            try {
+                await navigator.clipboard.writeText(extractedTextContent);
+                
+                // Mostrar feedback temporal
+                const originalText = document.querySelector('button[onclick="copyText()"]').innerHTML;
+                document.querySelector('button[onclick="copyText()"]').innerHTML = `
+                    <svg class="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Copiado
+                `;
+                
+                setTimeout(() => {
+                    document.querySelector('button[onclick="copyText()"]').innerHTML = originalText;
+                }, 2000);
+            } catch (err) {
+                console.error('Error al copiar:', err);
+                showError('No se pudo copiar al portapapeles.');
+            }
+        }
+
+        // Descargar texto como archivo
+        function downloadText() {
+            if (!extractedTextContent) return;
+            
+            const blob = new Blob([extractedTextContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            const baseName = selectedFile ? selectedFile.name.replace(/\.pdf$/i, '') : 'documento';
+            a.href = url;
+            a.download = `${baseName}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
