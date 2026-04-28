@@ -7,7 +7,7 @@ peticiones externas y las convierte en llamadas al dominio.
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import PlainTextResponse
 
-from APP.services.pdf_service import PdfService, PdfProcessingError
+from app.services.pdf_service import PdfService, PdfProcessingError
 
 
 router = APIRouter(prefix="/api/v1", tags=["documents"])

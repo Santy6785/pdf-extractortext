@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from APP.api.routes import router
+from app.api.routes import router
 
 
 # Obtener la ruta absoluta del directorio static
