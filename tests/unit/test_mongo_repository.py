@@ -25,22 +25,22 @@ async def test_mongo_repository_save(mock_motor_collection):
     """Test que guarda un documento en MongoDB."""
     from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
     from app.domain.models.document import Document
-    
+
     # Configurar mock
     inserted_id = ObjectId()
     mock_motor_collection.insert_one.return_value = MagicMock(inserted_id=inserted_id)
-    
+
     repository = MongoDocumentRepository(mock_motor_collection)
-    
+
     document = Document(
-        id="",
         checksum="abc123",
         extracted_text="contenido del documento",
-        created_at=datetime.now()
+        created_at=datetime.now(),
+        id=None
     )
-    
+
     result = await repository.save(document)
-    
+
     mock_motor_collection.insert_one.assert_called_once()
     assert isinstance(result, str)
 
@@ -142,9 +142,9 @@ async def test_mongo_repository_delete_not_found(mock_motor_collection):
 
 @pytest.mark.asyncio
 async def test_mongo_repository_find_all(mock_motor_collection):
-    """Test que lista todos los documentos."""
+    """Test que lista todos los documentos con paginación."""
     from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
-    
+
     # Simular cursor con documentos (solo campos requeridos)
     mock_docs = [
         {
@@ -160,17 +160,47 @@ async def test_mongo_repository_find_all(mock_motor_collection):
             "created_at": datetime.now()
         }
     ]
-    
+
     mock_cursor = MagicMock()
     mock_cursor.to_list = AsyncMock(return_value=mock_docs)
     mock_motor_collection.find.return_value = mock_cursor
-    
+
     repository = MongoDocumentRepository(mock_motor_collection)
-    
+
     result = await repository.find_all()
-    
+
     assert len(result) == 2
     assert all(doc.checksum in ["cs1", "cs2"] for doc in result)
+    # Verify default pagination
+    mock_motor_collection.find.return_value.skip.assert_called_once_with(0)
+    mock_motor_collection.find.return_value.limit.assert_called_once_with(20)
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_find_all_with_pagination(mock_motor_collection):
+    """Test que lista documentos con paginación personalizada."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+
+    mock_docs = [
+        {
+            "_id": ObjectId(),
+            "checksum": "cs3",
+            "extracted_text": "texto3",
+            "created_at": datetime.now()
+        }
+    ]
+
+    mock_cursor = MagicMock()
+    mock_cursor.to_list = AsyncMock(return_value=mock_docs)
+    mock_motor_collection.find.return_value = mock_cursor
+
+    repository = MongoDocumentRepository(mock_motor_collection)
+
+    result = await repository.find_all(skip=5, limit=10)
+
+    assert len(result) == 1
+    mock_motor_collection.find.return_value.skip.assert_called_once_with(5)
+    mock_motor_collection.find.return_value.limit.assert_called_once_with(10)
 
 
 @pytest.mark.asyncio
@@ -201,35 +231,88 @@ async def test_mongo_repository_schema_fields():
     """Test que el documento tiene solo los campos requeridos (checksum, extracted_text, created_at)."""
     from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
     from app.domain.models.document import Document
-    
+
     collection = MagicMock()
-    
+
     doc = Document(
-        id="",
         checksum="test-checksum",
         extracted_text="texto del documento",
-        created_at=datetime(2024, 1, 1, 12, 0, 0)
+        created_at=datetime(2024, 1, 1, 12, 0, 0),
+        id=None
     )
-    
+
     inserted_id = ObjectId()
     insert_result = MagicMock()
     insert_result.inserted_id = inserted_id
     collection.insert_one = AsyncMock(return_value=insert_result)
-    
+
     repository = MongoDocumentRepository(collection)
     await repository.save(doc)
-    
+
     # Verificar que se llamó a insert_one
     assert collection.insert_one.called
-    
+
     # Obtener el diccionario pasado a insert_one
     call_args = collection.insert_one.call_args[0][0]
-    
+
     # Verificar campos del esquema
     assert "checksum" in call_args
     assert "extracted_text" in call_args
     assert "created_at" in call_args
-    
+
     # Verificar que NO tiene campos no deseados
     assert "filename" not in call_args
     assert "page_dimensions" not in call_args
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_update_success():
+    """Test que actualiza un documento existente."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    update_result = MagicMock()
+    update_result.matched_count = 1
+    collection.update_one = AsyncMock(return_value=update_result)
+
+    repository = MongoDocumentRepository(collection)
+
+    doc_id = str(ObjectId())
+    document = Document(
+        checksum="updated-checksum",
+        extracted_text="updated text",
+        created_at=datetime.now(),
+        id=doc_id
+    )
+
+    result = await repository.update(doc_id, document)
+
+    assert result is True
+    collection.update_one.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_update_not_found():
+    """Test que retorna False al actualizar documento inexistente."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    update_result = MagicMock()
+    update_result.matched_count = 0
+    collection.update_one = AsyncMock(return_value=update_result)
+
+    repository = MongoDocumentRepository(collection)
+
+    doc_id = str(ObjectId())
+    document = Document(
+        checksum="check",
+        extracted_text="text",
+        created_at=datetime.now(),
+        id=doc_id
+    )
+
+    result = await repository.update(doc_id, document)
+
+    assert result is False
