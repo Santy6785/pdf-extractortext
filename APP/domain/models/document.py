@@ -3,26 +3,26 @@ Entidad de dominio Document.
 Representa un documento PDF procesado y almacenado en el sistema.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 
 @dataclass
 class Document:
     """
     Entidad de dominio que representa un documento PDF procesado.
-    
+
     Schema MongoDB:
     - _id: Identificador único (generado automáticamente)
     - checksum: Hash SHA-256 del archivo original (para unicidad)
     - extracted_text: Texto extraído del PDF (contenido del documento)
     - created_at: Fecha de subida/carga del documento
     """
-    id: str
     checksum: str
     extracted_text: str
     created_at: datetime
+    id: Optional[str] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Serializa el documento a un diccionario."""
@@ -41,10 +41,15 @@ class Document:
             created_at = datetime.fromisoformat(created_at)
         elif created_at is None:
             created_at = datetime.now()
-            
+
+        # Handle _id from MongoDB or id from serialization
+        doc_id = data.get("_id") or data.get("id")
+        if doc_id is not None:
+            doc_id = str(doc_id)
+
         return cls(
-            id=str(data.get("_id", data.get("id", ""))),
             checksum=data.get("checksum", ""),
             extracted_text=data.get("extracted_text", ""),
-            created_at=created_at
+            created_at=created_at,
+            id=doc_id
         )
