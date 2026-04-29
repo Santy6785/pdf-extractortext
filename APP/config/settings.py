@@ -9,15 +9,19 @@ from functools import lru_cache
 
 class Settings(BaseSettings):
     """Configuración de la aplicación cargada desde variables de entorno."""
-    
+
     # MongoDB
     mongodb_url: str = "mongodb://localhost:27017"
     mongodb_db_name: str = "pdf_extractor"
-    
+
     # App
     app_name: str = "PDF Extractor API"
     app_version: str = "0.1.0"
     debug: bool = False
+
+    # PDF Configuration
+    max_pdf_size_mb: int = 10  # Tamaño máximo de PDF en MB
+    default_page_size: int = 20  # Tamaño de página por defecto para paginación
     
     class Config:
         env_file = ".env"

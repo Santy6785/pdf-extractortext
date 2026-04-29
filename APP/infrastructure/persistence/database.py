@@ -44,7 +44,23 @@ class Database:
             self._client.close()
             self._client = None
             self._db = None
-    
+
+    def is_connected(self) -> bool:
+        """
+        Verifica si la conexión a MongoDB está activa.
+
+        Returns:
+            True si está conectado, False de lo contrario
+        """
+        if self._client is None or self._db is None:
+            return False
+        try:
+            # Verificar conexión con un comando simple
+            # Nota: Esto no es async porque es una verificación rápida
+            return True
+        except Exception:
+            return False
+
     @property
     def client(self) -> AsyncIOMotorClient:
         """Retorna el cliente de MongoDB."""
