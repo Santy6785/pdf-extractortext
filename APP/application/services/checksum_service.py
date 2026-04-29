@@ -88,10 +88,10 @@ class ChecksumService:
         
         # Crear documento de dominio
         document = Document(
-            id=str(ObjectId()),
             checksum=checksum,
             extracted_text=dto.extracted_text,
-            created_at=datetime.now()
+            created_at=datetime.now(),
+            id=str(ObjectId())
         )
         
         return ChecksumValidationResult(
