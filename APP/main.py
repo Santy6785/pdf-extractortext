@@ -8,13 +8,30 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from contextlib import asynccontextmanager
 
 from app.api.routes import router
+from app.infrastructure.persistence.database import database
 
 
 # Obtener la ruta absoluta del directorio static
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "api", "static")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Gestor de ciclo de vida de la aplicación.
+    
+    - Conecta a MongoDB al iniciar
+    - Desconecta al cerrar
+    """
+    # Startup: Conectar a MongoDB
+    await database.connect()
+    yield
+    # Shutdown: Desconectar de MongoDB
+    await database.disconnect()
 
 
 def create_app() -> FastAPI:
@@ -24,22 +41,23 @@ def create_app() -> FastAPI:
     """
     app = FastAPI(
         title="Extractor de Documentos PDF",
-        description="API para extraer texto y metadatos de archivos PDF",
-        version="0.1.0",
+        description="API para extraer texto y metadatos de archivos PDF con persistencia en MongoDB",
+        version="0.2.0",
+        lifespan=lifespan
     )
-
+    
     # Montar archivos estáticos
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
+    
     # Incluir rutas de la API
     app.include_router(router)
-
+    
     # Ruta raíz que sirve el index.html
     @app.get("/")
     async def root():
         """Sirve la interfaz web principal."""
         return FileResponse(os.path.join(STATIC_DIR, "index.html"))
-
+    
     return app
 
 
