@@ -103,14 +103,18 @@ class DocumentService:
         except Exception as e:
             raise DocumentServiceError(f"Error processing document: {str(e)}")
     
-    async def get_all(self) -> List[DocumentListDTO]:
+    async def get_all(self, skip: int = 0, limit: int = 20) -> List[DocumentListDTO]:
         """
-        Obtiene todos los documentos en formato resumido.
-        
+        Obtiene todos los documentos en formato resumido con paginación.
+
+        Args:
+            skip: Número de documentos a saltar (offset)
+            limit: Número máximo de documentos a retornar
+
         Returns:
             Lista de documentos resumidos
         """
-        documents = await self._repository.find_all()
+        documents = await self._repository.find_all(skip=skip, limit=limit)
         return [DocumentListDTO.from_entity(doc) for doc in documents]
     
     async def get_by_id(self, document_id: str) -> Optional[DocumentResponseDTO]:
@@ -128,18 +132,44 @@ class DocumentService:
             return DocumentResponseDTO.from_entity(document)
         return None
     
+    async def update(self, document_id: str, extracted_text: str) -> Optional[DocumentResponseDTO]:
+        """
+        Actualiza el texto extraído de un documento por su ID.
+
+        Args:
+            document_id: ID del documento a actualizar
+            extracted_text: Nuevo texto extraído
+
+        Returns:
+            Documento actualizado o None si no existía
+        """
+        # Obtener documento existente
+        existing = await self._repository.find_by_id(document_id)
+        if existing is None:
+            return None
+
+        # Actualizar solo el texto extraído
+        existing.extracted_text = extracted_text
+
+        # Guardar cambios
+        updated = await self._repository.update(document_id, existing)
+        if not updated:
+            return None
+
+        return DocumentResponseDTO.from_entity(existing)
+
     async def delete(self, document_id: str) -> bool:
         """
         Elimina un documento por su ID.
-        
+
         Args:
             document_id: ID del documento a eliminar
-            
+
         Returns:
             True si se eliminó, False si no existía
         """
         return await self._repository.delete(document_id)
-    
+
     async def check_exists_by_checksum(self, checksum: str) -> bool:
         """
         Verifica si existe un documento con el checksum dado.
