@@ -124,16 +124,47 @@ class MongoDocumentRepository(DocumentRepository):
         data = await self._collection.find_one({"checksum": checksum})
         return self._dict_to_document(data)
     
-    async def find_all(self) -> List[Document]:
+    async def find_all(self, skip: int = 0, limit: int = 20) -> List[Document]:
         """
-        Obtiene todos los documentos almacenados.
-        
+        Obtiene todos los documentos almacenados con paginación.
+
+        Args:
+            skip: Número de documentos a saltar (offset)
+            limit: Número máximo de documentos a retornar
+
         Returns:
             Lista de documentos
         """
-        cursor = self._collection.find()
-        documents = await cursor.to_list(length=None)
+        cursor = self._collection.find().skip(skip).limit(limit)
+        documents = await cursor.to_list(length=limit)
         return [self._dict_to_document(doc) for doc in documents if doc]
+
+    async def update(self, document_id: str, document: Document) -> bool:
+        """
+        Actualiza un documento existente por su ID.
+
+        Args:
+            document_id: ID del documento a actualizar
+            document: Documento con los nuevos datos
+
+        Returns:
+            True si se actualizó, False si no existía
+        """
+        try:
+            if not ObjectId.is_valid(document_id):
+                return False
+
+            doc_dict = self._document_to_dict(document)
+            # Remove _id from update to avoid MongoDB errors
+            doc_dict.pop("_id", None)
+
+            result = await self._collection.update_one(
+                {"_id": ObjectId(document_id)},
+                {"$set": doc_dict}
+            )
+            return result.matched_count > 0
+        except Exception:
+            return False
     
     async def delete(self, document_id: str) -> bool:
         """

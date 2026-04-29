@@ -58,23 +58,41 @@ class DocumentRepository(ABC):
         pass
     
     @abstractmethod
-    async def find_all(self) -> List[Document]:
+    async def find_all(self, skip: int = 0, limit: int = 20) -> List[Document]:
         """
-        Obtiene todos los documentos almacenados.
-        
+        Obtiene todos los documentos almacenados con paginación.
+
+        Args:
+            skip: Número de documentos a saltar (offset)
+            limit: Número máximo de documentos a retornar
+
         Returns:
             Lista de documentos
         """
         pass
-    
+
+    @abstractmethod
+    async def update(self, document_id: str, document: Document) -> bool:
+        """
+        Actualiza un documento existente por su ID.
+
+        Args:
+            document_id: ID del documento a actualizar
+            document: Documento con los nuevos datos
+
+        Returns:
+            True si se actualizó, False si no existía
+        """
+        pass
+
     @abstractmethod
     async def delete(self, document_id: str) -> bool:
         """
         Elimina un documento por su ID.
-        
+
         Args:
             document_id: ID del documento a eliminar
-            
+
         Returns:
             True si se eliminó, False si no existía
         """
