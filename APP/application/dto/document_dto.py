@@ -16,6 +16,12 @@ class DocumentCreateDTO:
 
 
 @dataclass
+class DocumentUpdateDTO:
+    """DTO para actualizar un documento existente."""
+    extracted_text: str
+
+
+@dataclass
 class DocumentResponseDTO:
     """DTO para responder con un documento completo."""
     id: str
