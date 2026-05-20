@@ -1,0 +1,67 @@
+
+@endumltitle Flujo Principal: Extracción de Texto PDF\n(Camino Feliz y Camino de Error)
+actor "Usuario" as U
+participant "Interfaz Web\n(Frontend)" as FW
+participant "API\n(Controlador FastAPI)" as API
+participant "Servicio de\nDocumentos" as SD
+participant "Servicio PDF" as SP
+participant "Servicio de\nChecksum" as SC
+participant "Repositorio\nMongoDB" as DB
+== Camino Feliz: Procesamiento Exitoso ==
+U -> FW : Selecciona/arrastra archivo PDF
+FW -> FW : Validar tipo MIME,\nextensión .pdf y tamaño (10MB)
+FW -> API : POST /api/v1/documents/\nFormData {file}
+API -> API : validate_pdf_file()\n(content_type y extensión)
+API -> API : Leer bytes en memoria\n(file.read())
+API -> API : Validar tamaño máximo\nconfigurado (max_pdf_size_mb)
+API -> SD : process_and_save(file_bytes, filename)
+SD -> SP : process_pdf(file_bytes, filename)
+SP -> SP : Calcular checksum SHA-256\n(hashlib.sha256)
+SP -> SP : Extraer texto con PdfReader\n(iterar páginas)
+SP --> SD : PdfProcessingResult\n{checksum, texto_extraido, dimensiones}
+SD -> SC : validate_and_create_document(\nDocumentCreateDTO)
+SC -> SC : calculate_checksum(file_bytes)
+SC -> DB : find_by_checksum(checksum)
+DB --> SC : None (no existe)
+SC -> SC : Crear entidad Document\n{checksum, texto, fecha}
+SC --> SD : ChecksumValidationResult\n{is_valid=True, document}
+SD -> DB : save(document)
+DB --> SD : document_id
+SD --> API : ChecksumValidationResult\n{is_valid=True, document}
+API -> API : DocumentResponseDTO\n.from_entity(document)
+API --> FW : HTTP 200 JSON\n{id, checksum, extracted_text, created_at}
+FW -> FW : Calcular SHA-256 local\n(Web Crypto API)
+FW -> FW : Mostrar resultados:\nchecksum y texto extraído
+FW --> U : Muestra checksum SHA-256\ny texto extraído
+== Camino de Error: Formato Incorrecto ==
+U -> FW : Selecciona archivo NO PDF\n(ej: imagen.png)
+FW -> FW : Validar tipo MIME\ny extensión → falla
+FW --> U : Muestra error:\n"El archivo debe ser un PDF.\nFormato no válido."
+== Camino de Error: PDF Corrupto ==
+U -> FW : Selecciona PDF corrupto
+FW -> API : POST /api/v1/documents/\nFormData {file}
+API -> API : validate_pdf_file() → OK
+API -> API : Leer bytes en memoria → OK
+API -> SD : process_and_save(file_bytes, filename)
+SD -> SP : process_pdf(file_bytes, filename)
+SP -> SP : PdfReader lanza PdfReadError
+SP --> SD : PdfProcessingError\n"PDF corrupto o no legible"
+SD --> API : DocumentServiceError
+API --> FW : HTTP 422\n"No se pudo procesar el PDF"
+FW --> U : Muestra error:\n"El archivo no es un PDF válido\no está corrupto."
+== Camino de Error: Documento Duplicado ==
+U -> FW : Sube PDF ya existente
+FW -> API : POST /api/v1/documents/\nFormData {file}
+API -> API : validate_pdf_file() → OK
+API -> SD : process_and_save(file_bytes, filename)
+SD -> SP : process_pdf(file_bytes, filename)
+SP --> SD : PdfProcessingResult
+SD -> SC : validate_and_create_document(dto)
+SC -> SC : calculate_checksum(file_bytes)
+SC -> DB : find_by_checksum(checksum)
+DB --> SC : Documento existente
+SC --> SD : ChecksumValidationResult\n{is_valid=False,\nerror_message="already exists"}
+SD --> API : ChecksumValidationResult\n{is_valid=False}
+API --> FW : HTTP 409 Conflict\n"Documento con checksum ya existe"
+FW --> U : Muestra error:\n"El archivo ya existe en el sistema."
+@enduml
