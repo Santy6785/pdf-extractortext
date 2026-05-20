@@ -1,0 +1,218 @@
+@startuml
+
+' ============================================================================
+' CONFIGURACIÓN VISUAL
+' ============================================================================
+skinparam backgroundColor #FEFEFE
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor<<Dominio>> #E3F2FD
+    BackgroundColor<<Aplicacion>> #FFF3E0
+    BackgroundColor<<Infraestructura>> #E8F5E9
+    BackgroundColor<<Interfaz>> #FCE4EC
+    BorderColor<<Dominio>> #1976D2
+    BorderColor<<Aplicacion>> #E65100
+    BorderColor<<Infraestructura>> #388E3C
+    BorderColor<<Interfaz>> #C2185B
+}
+
+title Diagrama de Clases del Sistema\nPDF Extractor API
+
+' ============================================================================
+' CAPA DE DOMINIO
+' ============================================================================
+
+package "Dominio" <<Dominio>> {
+
+    class Documento {
+        + checksum: str
+        + texto_extraido: str
+        + fecha_creacion: datetime
+        + id: str (opcional)
+        + to_dict(): dict
+        + from_dict(data: dict): Documento
+    }
+
+    abstract class RepositorioDocumentos <<Repositorio>> {
+        + guardar(documento: Documento): str
+        + buscar_por_id(id: str): Documento (opcional)
+        + buscar_por_checksum(checksum: str): Documento (opcional)
+        + listar(skip: int, limit: int): Lista~Documento~
+        + actualizar(id: str, documento: Documento): bool
+        + eliminar(id: str): bool
+    }
+
+    class ServicioPdf {
+        + procesar_pdf(bytes: bytes, nombre: str): ResultadoPdf
+        - _calcular_checksum(bytes: bytes): str
+        - _extraer_texto(bytes: bytes): str
+    }
+
+    class ResultadoPdf {
+        + nombre_archivo: str
+        + checksum: str
+        + texto_extraido: str
+    }
+
+    class ErrorProcesamientoPdf {
+        + mensaje: str
+    }
+}
+
+' ============================================================================
+' CAPA DE APLICACIÓN
+' ============================================================================
+
+package "Aplicación" <<Aplicacion>> {
+
+    class ServicioDocumento {
+        - repositorio: RepositorioDocumentos
+        - servicio_pdf: ServicioPdf
+        - servicio_checksum: ServicioChecksum
+        + procesar_y_guardar(bytes: bytes, nombre: str): ResultadoValidacion
+        + obtener_todos(skip: int, limit: int): Lista~DocumentoResumen~
+        + obtener_por_id(id: str): DocumentoCompleto (opcional)
+        + actualizar(id: str, texto: str): DocumentoCompleto (opcional)
+        + eliminar(id: str): bool
+        + existe_por_checksum(checksum: str): bool
+    }
+
+    class ServicioChecksum {
+        - repositorio: RepositorioDocumentos (opcional)
+        + calcular_checksum(bytes: bytes): str
+        + es_unico(checksum: str): bool
+        + validar_y_crear(dto: CrearDocumento): ResultadoValidacion
+    }
+
+    class CrearDocumento {
+        + bytes_archivo: bytes
+        + texto_extraido: str
+    }
+
+    class ActualizarDocumento {
+        + texto_extraido: str
+    }
+
+    class DocumentoCompleto {
+        + id: str
+        + checksum: str
+        + texto_extraido: str
+        + fecha_creacion: datetime
+        + from_entity(documento: Documento): DocumentoCompleto
+    }
+
+    class DocumentoResumen {
+        + id: str
+        + checksum: str
+        + fecha_creacion: datetime
+        + from_entity(documento: Documento): DocumentoResumen
+    }
+
+    class ResultadoValidacion {
+        + es_valido: bool
+        + documento: Documento (opcional)
+        + mensaje_error: str (opcional)
+    }
+
+    class ErrorServicioDocumento {
+        + mensaje: str
+    }
+}
+
+' ============================================================================
+' CAPA DE INFRAESTRUCTURA
+' ============================================================================
+
+package "Infraestructura" <<Infraestructura>> {
+
+    class RepositorioDocumentosMongo {
+        - coleccion: AsyncIOMotorCollection
+        + guardar(documento: Documento): str
+        + buscar_por_id(id: str): Documento (opcional)
+        + buscar_por_checksum(checksum: str): Documento (opcional)
+        + listar(skip: int, limit: int): Lista~Documento~
+        + actualizar(id: str, documento: Documento): bool
+        + eliminar(id: str): bool
+        - _a_diccionario(documento: Documento): dict
+        - _a_documento(datos: dict): Documento (opcional)
+    }
+
+    class BaseDatos {
+        - instancia: BaseDatos {estático}
+        - cliente: AsyncIOMotorClient
+        + conectar(): void
+        + desconectar(): void
+        + esta_conectado(): bool
+        + obtener_coleccion(nombre: str): Coleccion
+    }
+
+    class Configuracion {
+        + url_mongodb: str
+        + nombre_bd: str
+        + nombre_app: str
+        + version: str
+        + max_tamano_pdf_mb: int
+    }
+}
+
+' ============================================================================
+' CAPA DE INTERFAZ / API
+' ============================================================================
+
+package "API" <<Interfaz>> {
+
+    class Rutas {
+        + listar_documentos(skip, limit): Lista~DocumentoResumen~
+        + obtener_documento(id): DocumentoCompleto
+        + actualizar_documento(id, datos): DocumentoCompleto
+        + subir_documento(archivo): DocumentoCompleto
+        + eliminar_documento(id): void
+        + verificar_salud(): dict
+    }
+
+    class Dependencias {
+        + obtener_repositorio(): RepositorioDocumentos
+        + obtener_servicio_documento(): ServicioDocumento
+    }
+
+    class AplicacionPrincipal {
+        + crear_app(): FastAPI
+        + app: FastAPI
+    }
+}
+
+' ============================================================================
+' RELACIONES PRINCIPALES
+' ============================================================================
+
+' -- Herencia --
+RepositorioDocumentosMongo ..|> RepositorioDocumentos
+
+' -- Composición --
+ServicioDocumento *-- RepositorioDocumentos
+ServicioDocumento *-- ServicioPdf
+ServicioDocumento *-- ServicioChecksum
+ServicioChecksum *-- RepositorioDocumentos
+RepositorioDocumentosMongo *-- BaseDatos
+
+' -- Dependencias --
+ServicioDocumento ..> ResultadoValidacion
+ServicioDocumento ..> DocumentoCompleto
+ServicioDocumento ..> DocumentoResumen
+ServicioChecksum ..> ResultadoValidacion
+BaseDatos ..> Configuracion
+
+' -- DTOs --
+DocumentoCompleto ..> Documento
+DocumentoResumen ..> Documento
+
+' -- API --
+Rutas ..> ServicioDocumento
+Rutas ..> DocumentoCompleto
+Rutas ..> DocumentoResumen
+Dependencias ..> RepositorioDocumentosMongo
+Dependencias ..> ServicioDocumento
+AplicacionPrincipal ..> Rutas
+AplicacionPrincipal ..> BaseDatos
+
+@enduml
