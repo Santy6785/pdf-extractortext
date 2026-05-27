@@ -1,3 +1,4 @@
+@startuml secuencia
 
 @endumltitle Flujo Principal: Extracción de Texto PDF\n(Camino Feliz y Camino de Error)
 actor "Usuario" as U
