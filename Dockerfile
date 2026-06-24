@@ -22,7 +22,6 @@ WORKDIR /app
 #Copiar archivos de dependencias
 COPY pyproject.toml ./
 COPY uv.lock ./
-COPY README.md ./
 
 #Sincronizar dependencias con uv
 RUN uv pip install --system . uvicorn

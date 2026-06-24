@@ -1,0 +1,111 @@
+# ============================================================
+# .dockerignore - Archivos excluidos de la imagen Docker
+# 12-Factor App: Solo código necesario para ejecución
+# ============================================================
+
+# ---- Archivos de configuración local y sensibles ----
+.env
+*.env
+.env.*
+secrets/
+credentials/
+
+# ---- Carpeta docker (solo para desarrollo/orquestación) ----
+docker/
+
+# ---- Entornos virtuales de Python ----
+venv/
+.env/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ---- Caché de Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ---- Caché de herramientas de desarrollo ----
+.cache
+.pytest_cache/
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.tox/
+.nox/
+
+# ---- Git y control de versiones ----
+.git/
+.gitignore
+.gitattributes
+.gitlab-ci.yml
+.github/
+.hg/
+.hgignore
+.svn/
+CVS/
+
+# ---- Documentación (no necesaria para ejecución) ----
+README.md
+*.md
+docs/
+
+# ---- Tests (ejecutar en CI, no en imagen de producción) ----
+tests/
+test/
+conftest.py
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+
+# ---- IDEs y editores ----
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*.swn
+.spyderproject
+.spyproject
+.ropeproject
+
+# ---- Archivos Docker (build context) ----
+Dockerfile
+docker-compose*.yml
+docker-compose*.yaml
+.dockerignore
+
+# ---- Archivos del sistema operativo ----
+.DS_Store
+Thumbs.db
+*.log
+
+# ---- Otros ----
+.github/
+.editorconfig
+.pre-commit-config.yaml
+sonar-project.properties
+snyk*

@@ -1,14 +1,9 @@
-"""
-Punto de entrada de la aplicación FastAPI.
-Configura y crea la aplicación con sus rutas.
-"""
-
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from contextlib import asynccontextmanager
 import os
 import uvicorn
-from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
-from contextlib import asynccontextmanager
 
 from app.api.routes import router
 from app.infrastructure.persistence.database import database
@@ -57,6 +52,26 @@ def create_app() -> FastAPI:
     async def root():
         """Sirve la interfaz web principal."""
         return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+    
+    # Health check a nivel de aplicación (sin prefijo de versión API)
+    @app.get("/health", status_code=status.HTTP_200_OK)
+    async def health_check():
+        """Endpoint de health check para verificar el estado del sistema."""
+        try:
+            is_db_connected = database.is_connected()
+            status_info = {
+                "status": "healthy" if is_db_connected else "unhealthy",
+                "database": "connected" if is_db_connected else "disconnected",
+                "version": "0.2.0"
+            }
+            if is_db_connected:
+                return status_info
+            return JSONResponse(status_code=503, content=status_info)
+        except Exception as e:
+            return JSONResponse(
+                status_code=503,
+                content={"status": "unhealthy", "error": str(e), "version": "0.2.0"}
+            )
     
     return app
 

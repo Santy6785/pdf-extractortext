@@ -90,19 +90,24 @@ pdf-extractortext/
 - Docker y Docker Compose (opcional, recomendado)
 - MongoDB (si no usas Docker)
 
-### Opción 1: Usar Docker (Recomendado)
+### Opción 1: Usar Docker Compose (Recomendado)
+
+Este proyecto separa la compilación de la imagen (build) de la ejecución (runtime). El archivo `docker-compose.yml` utiliza imágenes versionadas ya compiladas, permitiendo un despliegue más rápido y controlado.
 
 ```bash
 # Clonar el repositorio
 git clone https://github.com/tu-usuario/pdf-extractortext.git
 cd pdf-extractortext
 
-# Copiar variables de entorno
-cp .env.example .env
+# Configurar las variables de la imagen (ejemplo con GitHub Container Registry)
+export API_IMAGE=ghcr.io/tu-usuario/pdf-extractortext-api        # Nombre de la imagen
+export API_VERSION=0.1.0                                           # Versión de la imagen
 
 # Iniciar servicios con Docker Compose
 docker-compose up -d
 ```
+
+> 💡 **Nota:** El inicio del proyecto asume que la imagen `${API_IMAGE}:${API_VERSION}` ya existe localmente o en el registro configurado.
 
 La aplicación estará disponible en: http://localhost:8000
 

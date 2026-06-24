@@ -3,6 +3,7 @@ Configuración de la aplicación siguiendo 12-Factor App.
 Todas las configuraciones se cargan desde variables de entorno.
 """
 
+import os
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -24,7 +25,9 @@ class Settings(BaseSettings):
     default_page_size: int = 20  # Tamaño de página por defecto para paginación
     
     class Config:
-        env_file = ".env"
+        # 12-Factor App: Variables primero del entorno, luego del archivo
+        # Si ENV_FILE_PATH está definido, usa ese archivo; si no, busca .env en la raíz
+        env_file = os.environ.get("ENV_FILE_PATH", ".env")
         env_file_encoding = "utf-8"
         case_sensitive = False
 
