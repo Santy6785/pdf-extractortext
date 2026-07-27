@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Extractor de Documentos PDF</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configuración de la API: URL base para las peticiones al backend
+        // En producción con proxy inverso (Nginx), se usa una URL relativa
+        const API_BASE_URL = ""; // Peticiones relativas: "/api/..." se redirigen por Nginx
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -48,7 +53,7 @@
                     </svg>
                     <span class="ml-3 text-xl font-bold text-gray-900">Extractor de Documentos PDF</span>
                 </div>
-                <a href="/docs" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
+                <a href="http://extract.universidad.localhost/docs" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">
                     Documentación API
                 </a>
             </div>
@@ -386,7 +391,7 @@
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const response = await fetch('/api/v1/documents/', {
+                const response = await fetch(`${API_BASE_URL}/api/v1/documents/`, {
                     method: 'POST',
                     body: formData
                 });

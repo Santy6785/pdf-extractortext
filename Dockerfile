@@ -22,12 +22,16 @@ WORKDIR /app
 #Copiar archivos de dependencias
 COPY pyproject.toml ./
 COPY uv.lock ./
+# README.md es requerido por pyproject.toml pero excluido por .dockerignore
+RUN echo "# PDF Extractor API" > README.md
 
 #Sincronizar dependencias con uv
 RUN uv pip install --system . uvicorn
 
-#Copiar codigo fuente
-COPY . .
+# Copiar solo el código fuente necesario (evita copiar tests, .venv, etc.)
+COPY app/ ./app/
+COPY pyproject.toml ./pyproject.toml
+COPY uv.lock ./uv.lock
 
 #Crear usuario no-root para seguridad
 RUN groupadd -r appuser && useradd -r -g appuser appuser \

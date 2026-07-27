@@ -1,17 +1,11 @@
 from fastapi import FastAPI, status
-from fastapi.responses import JSONResponse, FileResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
-import os
 import uvicorn
 
 from app.api.routes import router
 from app.infrastructure.persistence.database import database
-
-
-# Obtener la ruta absoluta del directorio static
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-STATIC_DIR = os.path.join(BASE_DIR, "api", "static")
 
 
 @asynccontextmanager
@@ -41,17 +35,17 @@ def create_app() -> FastAPI:
         lifespan=lifespan
     )
     
-    # Montar archivos estáticos
-    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    # Configurar CORS para permitir peticiones desde el frontend
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # En producción, restringir a los dominios específicos
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     
-    # Incluir rutas de la API
+    # Incluir rutas de la API (sin montar archivos estáticos)
     app.include_router(router)
-    
-    # Ruta raíz que sirve el index.html
-    @app.get("/")
-    async def root():
-        """Sirve la interfaz web principal."""
-        return FileResponse(os.path.join(STATIC_DIR, "index.html"))
     
     # Health check a nivel de aplicación (sin prefijo de versión API)
     @app.get("/health", status_code=status.HTTP_200_OK)

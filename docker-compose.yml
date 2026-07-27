@@ -1,17 +1,46 @@
 services:
-  # Servicio de la API FastAPI
+  # ------------------------------------------------------------------
+  # API (Backend) - FastAPI
+  # Conectado al Traefik y MongoDB externos
+  # ------------------------------------------------------------------
   api:
-    image: ${API_IMAGE:-pdf-extractortext-api}:${API_VERSION:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: pdf-api
     restart: unless-stopped
-    ports:
-      - "8000:8000"
     env_file:
       - docker/.env
     networks:
       - pdf-extractortext_pdf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`extract.universidad.localhost`)"
+      - "traefik.http.routers.api.entrypoints=https"
+      - "traefik.http.routers.api.tls=true"
+      - "traefik.http.services.api.loadbalancer.server.port=8000"
 
+  # ------------------------------------------------------------------
+  # Frontend - Nginx (servidor web estático + proxy al backend)
+  # ------------------------------------------------------------------
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: pdf-frontend
+    restart: unless-stopped
+    networks:
+      - pdf-extractortext_pdf-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`universidad.localhost`)"
+      - "traefik.http.routers.frontend.entrypoints=https"
+      - "traefik.http.routers.frontend.tls=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+# ------------------------------------------------------------------
+# Red externa compartida con la infraestructura central
+# ------------------------------------------------------------------
 networks:
   pdf-extractortext_pdf-network:
-    driver: bridge
     external: true
