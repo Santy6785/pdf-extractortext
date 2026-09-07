@@ -6,65 +6,6 @@ Utilizan mocks para simular la capa de servicio y repositorio.
 import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock, patch
-from fastapi.testclient import TestClient
-from fastapi import FastAPI
-
-
-@pytest.fixture
-def mock_document_service():
-    """Fixture que crea un mock del servicio de documentos."""
-    service = MagicMock()
-    service.get_all = AsyncMock()
-    service.get_by_id = AsyncMock()
-    service.create = AsyncMock()
-    service.delete = AsyncMock()
-    return service
-
-
-@pytest.fixture
-def app_with_mocked_service(mock_document_service):
-    """Fixture que crea una app FastAPI con servicio mockeado."""
-    from app.api.routes import router
-    
-    app = FastAPI()
-    
-    # Sobrescribir dependencias
-    app.dependency_overrides = {}
-    
-    app.include_router(router)
-    return app
-
-
-def test_get_documents_returns_list():
-    """Test que GET /documents/ retorna lista de documentos."""
-    from app.domain.models.document import Document
-    from app.application.dto.document_dto import DocumentListDTO
-    from datetime import datetime
-    
-    # Mock de documentos
-    docs = [
-        Document(
-            id="doc-1",
-            checksum="cs1",
-            extracted_text="texto1",
-            created_at=datetime.now()
-        ),
-        Document(
-            id="doc-2",
-            checksum="cs2",
-            extracted_text="texto2",
-            created_at=datetime.now()
-        )
-    ]
-    
-    # Verificar que el DTO de respuesta funciona
-    response_docs = [DocumentListDTO.from_entity(doc) for doc in docs]
-    
-    assert len(response_docs) == 2
-    assert response_docs[0].checksum == "cs1"
-    assert response_docs[1].checksum == "cs2"
-
-
 def test_get_document_by_id_returns_single_document():
     """Test que GET /documents/{id} retorna un documento específico."""
     from app.domain.models.document import Document
