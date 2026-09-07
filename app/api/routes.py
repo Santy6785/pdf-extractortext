@@ -29,9 +29,6 @@ def validate_pdf_file(file: UploadFile) -> None:
     Raises:
         HTTPException: 400 si el archivo no es PDF o excede el tamaño máximo
     """
-    settings = get_settings()
-    max_size_bytes = settings.max_pdf_size_mb * 1024 * 1024
-
     # Validar por content_type
     if file.content_type != "application/pdf":
         raise HTTPException(
