@@ -170,15 +170,4 @@ class DocumentService:
         """
         return await self._repository.delete(document_id)
 
-    async def check_exists_by_checksum(self, checksum: str) -> bool:
-        """
-        Verifica si existe un documento con el checksum dado.
-        
-        Args:
-            checksum: Hash a verificar
-            
-        Returns:
-            True si existe, False si no
-        """
-        existing = await self._repository.find_by_checksum(checksum)
-        return existing is not None
+    

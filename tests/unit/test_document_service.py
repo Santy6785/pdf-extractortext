@@ -209,28 +209,6 @@ async def test_document_service_delete_not_found():
 
 
 @pytest.mark.asyncio
-async def test_document_service_check_exists_by_checksum():
-    """Test que verifica existencia por checksum."""
-    from app.application.services.document_service import DocumentService
-    from app.domain.models.document import Document
-    
-    existing_doc = Document(
-        checksum="existing-checksum",
-        extracted_text="text",
-        created_at=datetime.now(),
-        id="doc-1"
-    )
-    
-    mock_repo = MagicMock()
-    mock_repo.find_by_checksum = AsyncMock(return_value=existing_doc)
-    
-    service = DocumentService(repository=mock_repo)
-    result = await service.check_exists_by_checksum("existing-checksum")
-    
-    assert result is True
-
-
-@pytest.mark.asyncio
 async def test_document_service_document_has_only_required_fields():
     """Test que el documento creado tiene solo los 4 campos requeridos."""
     from app.application.services.document_service import DocumentService
