@@ -6,7 +6,7 @@ sin dependencias de frameworks ni infraestructura.
 
 import hashlib
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import Tuple
 from io import BytesIO
 
 from pypdf import PdfReader
@@ -16,9 +16,7 @@ from pypdf.errors import PdfReadError
 @dataclass
 class PdfProcessingResult:
     """DTO para el resultado del procesamiento de PDF."""
-    nombre_archivo: str
     checksum: str
-    dimensiones_paginas: List[dict]
     texto_extraido: str
 
 
@@ -60,9 +58,7 @@ class PdfService:
             texto, dimensiones = self._extract_pdf_data(file_bytes)
             
             return PdfProcessingResult(
-                nombre_archivo=filename,
                 checksum=checksum,
-                dimensiones_paginas=dimensiones,
                 texto_extraido=texto
             )
             
