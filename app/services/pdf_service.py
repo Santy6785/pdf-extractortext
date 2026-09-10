@@ -6,7 +6,6 @@ sin dependencias de frameworks ni infraestructura.
 
 import hashlib
 from dataclasses import dataclass
-from typing import Tuple
 from io import BytesIO
 
 from pypdf import PdfReader
@@ -32,7 +31,6 @@ class PdfService:
     Responsabilidades:
     - Calcular checksum SHA-256 de los bytes
     - Extraer texto de todas las páginas
-    - Medir dimensiones de las páginas
     - Ignorar imágenes y elementos visuales
     """
 
@@ -54,8 +52,8 @@ class PdfService:
             # 1. Calcular checksum SHA-256
             checksum = self._calculate_checksum(file_bytes)
             
-            # 2. Extraer texto y dimensiones del PDF
-            texto, dimensiones = self._extract_pdf_data(file_bytes)
+            # 2. Extraer texto del PDF
+            texto = self._extract_text(file_bytes)
             
             return PdfProcessingResult(
                 checksum=checksum,
@@ -71,34 +69,14 @@ class PdfService:
         """Calcula el hash SHA-256 de los bytes."""
         return hashlib.sha256(data).hexdigest()
 
-    def _extract_pdf_data(self, file_bytes: bytes) -> Tuple[str, List[dict]]:
-        """
-        Extrae texto y dimensiones de todas las páginas del PDF.
-        
-        Args:
-            file_bytes: Bytes del PDF en memoria
-            
-        Returns:
-            Tupla de (texto_extraido, lista_de_dimensiones)
-        """
+    def _extract_text(self, file_bytes: bytes) -> str:
+        """Extrae texto del PDF usando pypdf."""
         reader = PdfReader(BytesIO(file_bytes))
-        
         text_parts = []
-        dimensions = []
         
         for page in reader.pages:
-            # Extraer texto (ignora imágenes automáticamente)
             page_text = page.extract_text()
             if page_text:
                 text_parts.append(page_text)
-            
-            # Capturar dimensiones de la página en puntos
-            width = float(page.mediabox.width)
-            height = float(page.mediabox.height)
-            dimensions.append({
-                "ancho": width,
-                "alto": height
-            })
         
-        full_text = "\n".join(text_parts)
-        return full_text, dimensions
+        return "\n".join(text_parts)

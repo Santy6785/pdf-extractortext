@@ -21,15 +21,14 @@ async def test_document_service_process_and_save_success():
     
     mock_pdf_service = MagicMock()
     mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
-        nombre_archivo="test.pdf",
         checksum="abc123",
-        dimensiones_paginas=[{"ancho": 595.0, "alto": 842.0}],
         texto_extraido="texto extraido"
     ))
+    mock_pdf_service.extract_text = MagicMock(return_value="texto extraido")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_service=mock_pdf_service
+        pdf_extractor=mock_pdf_service
     )
     
     file_bytes = b"test pdf content"
@@ -63,15 +62,14 @@ async def test_document_service_process_duplicate_checksum():
     
     mock_pdf_service = MagicMock()
     mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
-        nombre_archivo="new.pdf",
         checksum="duplicate-checksum",
-        dimensiones_paginas=[],
         texto_extraido="new text"
     ))
+    mock_pdf_service.extract_text = MagicMock(return_value="new text")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_service=mock_pdf_service
+        pdf_extractor=mock_pdf_service
     )
     
     file_bytes = b"content"
@@ -222,15 +220,14 @@ async def test_document_service_document_has_only_required_fields():
     
     mock_pdf_service = MagicMock()
     mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
-        nombre_archivo="test.pdf",
         checksum="abc123",
-        dimensiones_paginas=[{"ancho": 595.0, "alto": 842.0}],
         texto_extraido="texto extraido"
     ))
+    mock_pdf_service.extract_text = MagicMock(return_value="texto extraido")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_service=mock_pdf_service
+        pdf_extractor=mock_pdf_service
     )
     
     file_bytes = b"content"

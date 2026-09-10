@@ -7,14 +7,16 @@ from typing import List, Optional
 
 from app.domain.models.document import Document
 from app.domain.repositories.document_repository import DocumentRepository
+from app.application.pdf.pdf_extractor import PdfExtractor
+from app.services.pdf_service import PdfProcessingResult
+from app.application.services.checksum_service import ChecksumService
 from app.application.dto.document_dto import (
     DocumentCreateDTO,
     DocumentResponseDTO,
     DocumentListDTO,
     ChecksumValidationResult
 )
-from app.application.services.checksum_service import ChecksumService
-from app.services.pdf_service import PdfService, PdfProcessingResult
+from app.infrastructure.pdf.pypdf_extractor import PypdfPdfExtractor
 
 
 class DocumentServiceError(Exception):
@@ -36,7 +38,7 @@ class DocumentService:
     def __init__(
         self,
         repository: DocumentRepository,
-        pdf_service: Optional[PdfService] = None,
+        pdf_extractor: PdfExtractor = None,
         checksum_service: Optional[ChecksumService] = None
     ):
         """
@@ -44,11 +46,11 @@ class DocumentService:
         
         Args:
             repository: Repositorio de documentos
-            pdf_service: Servicio de procesamiento de PDFs (opcional)
+            pdf_extractor: Extractor de PDFs (opcional)
             checksum_service: Servicio de validación de checksum (opcional)
         """
         self._repository = repository
-        self._pdf_service = pdf_service or PdfService()
+        self._pdf_extractor = pdf_extractor or PypdfPdfExtractor()
         self._checksum_service = checksum_service or ChecksumService(repository)
     
     async def process_and_save(
@@ -70,9 +72,21 @@ class DocumentService:
             DocumentServiceError: Si hay error al procesar el PDF
         """
         try:
-            # 1. Procesar PDF
-            pdf_result: PdfProcessingResult = self._pdf_service.process_pdf(
-                file_bytes, filename
+            # 1. Procesar PDF usando el extractor de la capa de aplicación
+            self._pdf_extractor.extract_metadata(
+                file_bytes
+            )
+            
+            # Calcular checksum SHA-256
+            checksum = self._checksum_service.calculate_checksum(file_bytes)
+            
+            # Extraer texto usando el adaptador pypdf
+            texto_extraido = self._pdf_extractor.extract_text(file_bytes)
+            
+            # Crear resultado de procesamiento
+            pdf_result = PdfProcessingResult(
+                checksum=checksum,
+                texto_extraido=texto_extraido
             )
             
             # 2. Crear DTO para validación
