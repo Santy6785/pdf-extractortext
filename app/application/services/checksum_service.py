@@ -86,12 +86,11 @@ class ChecksumService:
                 error_message=f"Document with checksum {checksum} already exists (409 Conflict)"
             )
         
-        # Crear documento de dominio
+        # Crear documento de dominio (id será generado por el repositorio al guardar)
         document = Document(
             checksum=checksum,
             extracted_text=dto.extracted_text,
-            created_at=datetime.now(),
-            id=str(ObjectId())
+            created_at=datetime.now()
         )
         
         return ChecksumValidationResult(
