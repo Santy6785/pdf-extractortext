@@ -11,9 +11,8 @@ from typing import List, Optional
 from app.services.pdf_service import PdfProcessingError
 from app.application.services.document_service import DocumentService
 from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDTO, DocumentUpdateDTO
-from app.api.dependencies import get_document_service
+from app.api.dependencies import get_document_service, get_database
 from app.config.settings import get_settings
-from app.infrastructure.persistence.database import database
 
 
 router = APIRouter(prefix="/api/v1", tags=["documents"])
@@ -263,7 +262,9 @@ async def upload_document_legacy(
 # ==================== ENDPOINTS DE SALUD ====================
 
 @router.get("/health", status_code=200)
-async def health_check():
+async def health_check(
+    database: Database = Depends(get_database)
+):
     """
     Endpoint de health check para verificar el estado del sistema.
 

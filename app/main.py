@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 from app.api.routes import router
-from app.infrastructure.persistence.database import database
+from app.api.dependencies import get_database, get_document_service, create_app_with_deps
 
 
 @asynccontextmanager
@@ -17,7 +17,10 @@ async def lifespan(app: FastAPI):
     - Desconecta al cerrar
     """
     # Startup: Conectar a MongoDB
+    database = get_database()
     await database.connect()
+    # Almacenar en app.state para que esté disponible en los endpoints
+    app.state.database = database
     yield
     # Shutdown: Desconectar de MongoDB
     await database.disconnect()
@@ -50,22 +53,21 @@ def create_app() -> FastAPI:
     # Health check a nivel de aplicación (sin prefijo de versión API)
     @app.get("/health", status_code=status.HTTP_200_OK)
     async def health_check():
-        """Endpoint de health check para verificar el estado del sistema."""
-        try:
-            is_db_connected = database.is_connected()
-            status_info = {
-                "status": "healthy" if is_db_connected else "unhealthy",
-                "database": "connected" if is_db_connected else "disconnected",
-                "version": "0.2.0"
-            }
-            if is_db_connected:
-                return status_info
-            return JSONResponse(status_code=503, content=status_info)
-        except Exception as e:
-            return JSONResponse(
-                status_code=503,
-                content={"status": "unhealthy", "error": str(e), "version": "0.2.0"}
-            )
+        """
+        Endpoint de health check para verificar el estado del sistema.
+        
+        Returns:
+            Estado saludable o no saludable con información de la base de datos
+        """
+        is_db_connected = app.state.database.is_connected()
+        status_info = {
+            "status": "healthy" if is_db_connected else "unhealthy",
+            "database": "connected" if is_db_connected else "disconnected",
+            "version": "0.2.0"
+        }
+        if is_db_connected:
+            return status_info
+        return JSONResponse(status_code=503, content=status_info)
     
     return app
 
