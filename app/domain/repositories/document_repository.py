@@ -22,6 +22,9 @@ class DocumentRepository(ABC):
         """
         Guarda un documento en la base de datos.
         
+        Si el documento trae ID, realiza un upsert (actualiza si existe, inserta si no).
+        Si no trae ID, realiza una inserción nueva.
+        
         Args:
             document: Documento a guardar
             
