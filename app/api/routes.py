@@ -11,8 +11,8 @@ from typing import List, Optional
 from app.services.pdf_service import PdfProcessingError
 from app.application.services.document_service import DocumentService
 from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDTO, DocumentUpdateDTO
+from app.application.config_service import get_config_service, ConfigService
 from app.api.dependencies import get_document_service, get_database
-from app.config.settings import get_settings
 
 
 router = APIRouter(prefix="/api/v1", tags=["documents"])
@@ -161,13 +161,13 @@ async def upload_document(
     # 2. Leer archivo completamente en memoria (bytes)
     file_bytes = await file.read()
 
-    # 3. Validar tamaño máximo después de leer
-    settings = get_settings()
-    max_size_bytes = settings.max_pdf_size_mb * 1024 * 1024
+    # 3. Validar tamaño máximo después de leer (usando capa intermedia de configuración)
+    config: ConfigService = get_config_service()
+    max_size_bytes = config.get_max_pdf_size_mb() * 1024 * 1024
     if len(file_bytes) > max_size_bytes:
         raise HTTPException(
             status_code=400,
-            detail=f"El archivo excede el tamaño máximo permitido de {settings.max_pdf_size_mb}MB"
+            detail=f"El archivo excede el tamaño máximo permitido de {config.get_app_name()}MB"
         )
 
     try:
