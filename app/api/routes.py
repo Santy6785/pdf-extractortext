@@ -14,6 +14,7 @@ from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDT
 from app.application.config_service import get_config_service, ConfigService
 from app.api.dependencies import get_document_service, get_database
 from app.config.settings import get_settings
+from app.domain.exceptions import DocumentNotFoundError
 
 
 router = APIRouter(prefix="/api/v1", tags=["documents"])
@@ -63,6 +64,24 @@ def validate_pdf_size(file_bytes: bytes, config: ConfigService) -> None:
         )
 
 
+def raise_document_not_found(document_id: str) -> None:
+    """
+    Lanza una excepción HTTP 404 para documento no encontrado.
+    
+    Centraliza el mensaje de error para evitar duplicación (DRY).
+    
+    Args:
+        document_id: ID del documento que no se encontró
+        
+    Raises:
+        HTTPException: 404 con mensaje estandarizado
+    """
+    raise HTTPException(
+        status_code=404,
+        detail=str(DocumentNotFoundError(document_id))
+    )
+
+
 # ==================== ENDPOINTS CRUD ====================
 
 @router.get("/documents/", response_model=List[DocumentListDTO])
@@ -105,10 +124,7 @@ async def get_document(
     document = await service.get_by_id(document_id)
 
     if document is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Documento con ID {document_id} no encontrado"
-        )
+        raise_document_not_found(document_id)
 
     return document
 
@@ -138,10 +154,7 @@ async def update_document(
     )
 
     if updated_document is None:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Documento con ID {document_id} no encontrado"
-        )
+        raise_document_not_found(document_id)
 
     return updated_document
 
@@ -218,10 +231,7 @@ async def delete_document(
     deleted = await service.delete(document_id)
     
     if not deleted:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Documento con ID {document_id} no encontrado"
-        )
+        raise_document_not_found(document_id)
     
     return None
 
