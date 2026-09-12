@@ -12,6 +12,7 @@ from app.services.pdf_service import PdfProcessingError
 from app.application.services.document_service import DocumentService
 from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDTO, DocumentUpdateDTO
 from app.application.config_service import get_config_service, ConfigService
+from app.infrastructure.persistence.database import Database
 from app.api.dependencies import get_document_service, get_database
 from app.config.settings import get_settings
 from app.domain.exceptions import DocumentNotFoundError

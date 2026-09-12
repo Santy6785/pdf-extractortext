@@ -1,11 +1,10 @@
-from fastapi import FastAPI, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import uvicorn
 
 from app.api.routes import router
-from app.api.dependencies import get_database, get_document_service, create_app_with_deps
+from app.api.dependencies import get_database
 from app.config.settings import get_settings
 
 
@@ -49,29 +48,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
-    # Incluir rutas de la API (sin montar archivos estáticos)
+    # Incluir rutas de la API (incluye el health check en /api/v1/health)
     app.include_router(router)
-    
-    # Health check a nivel de aplicación (sin prefijo de versión API)
-    @app.get("/health", status_code=status.HTTP_200_OK)
-    async def health_check():
-        """
-        Endpoint de health check para verificar el estado del sistema.
-        
-        Returns:
-            Estado saludable o no saludable con información de la base de datos
-        """
-        is_db_connected = app.state.database.is_connected()
-        settings = get_settings()
-        status_info = {
-            "status": "healthy" if is_db_connected else "unhealthy",
-            "database": "connected" if is_db_connected else "disconnected",
-            "version": settings.app_version
-        }
-        if is_db_connected:
-            return status_info
-        return JSONResponse(status_code=503, content=status_info)
-    
+
     return app
 
 
