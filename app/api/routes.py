@@ -21,13 +21,13 @@ router = APIRouter(prefix="/api/v1", tags=["documents"])
 
 def validate_pdf_file(file: UploadFile) -> None:
     """
-    Valida que el archivo sea un PDF y cumpla con el tamaño máximo.
+    Valida que el archivo sea un PDF (tipo MIME y extensión).
 
     Args:
         file: Archivo subido
 
     Raises:
-        HTTPException: 400 si el archivo no es PDF o excede el tamaño máximo
+        HTTPException: 400 si el archivo no es PDF
     """
     # Validar por content_type
     if file.content_type != "application/pdf":
@@ -43,9 +43,24 @@ def validate_pdf_file(file: UploadFile) -> None:
             detail="El archivo debe tener extension .pdf"
         )
 
-    # Validar tamaño máximo
-    # Nota: SpooledTemporaryFile no tiene un método directo para obtener tamaño
-    # hasta que se leen los bytes, por lo que validamos después de leer
+
+def validate_pdf_size(file_bytes: bytes, config: ConfigService) -> None:
+    """
+    Valida que el archivo PDF no exceda el tamaño máximo configurado.
+
+    Args:
+        file_bytes: Contenido del archivo en bytes
+        config: Servicio de configuración
+
+    Raises:
+        HTTPException: 400 si el archivo excede el tamaño máximo
+    """
+    max_size_bytes = config.get_max_pdf_size_bytes()
+    if len(file_bytes) > max_size_bytes:
+        raise HTTPException(
+            status_code=400,
+            detail=f"El archivo excede el tamaño máximo permitido de {config.get_max_pdf_size_mb()}MB"
+        )
 
 
 # ==================== ENDPOINTS CRUD ====================
@@ -162,14 +177,9 @@ async def upload_document(
     # 2. Leer archivo completamente en memoria (bytes)
     file_bytes = await file.read()
 
-    # 3. Validar tamaño máximo después de leer (usando capa intermedia de configuración)
+    # 3. Validar tamaño máximo después de leer (usando validación centralizada)
     config: ConfigService = get_config_service()
-    max_size_bytes = config.get_max_pdf_size_mb() * 1024 * 1024
-    if len(file_bytes) > max_size_bytes:
-        raise HTTPException(
-            status_code=400,
-            detail=f"El archivo excede el tamaño máximo permitido de {config.get_app_name()}MB"
-        )
+    validate_pdf_size(file_bytes, config)
 
     try:
         # 4. Procesar y guardar con validación de checksum
@@ -230,6 +240,10 @@ async def upload_document_legacy(
     """
     validate_pdf_file(file)
     file_bytes = await file.read()
+    
+    # Validar tamaño máximo (usando validación centralizada)
+    config: ConfigService = get_config_service()
+    validate_pdf_size(file_bytes, config)
     
     try:
         result = await service.process_and_save(file_bytes, file.filename)

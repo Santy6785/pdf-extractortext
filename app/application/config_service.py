@@ -12,6 +12,7 @@ class ConfigService(Protocol):
     """Protocolo para el servicio de configuración."""
 
     def get_max_pdf_size_mb(self) -> int: ...
+    def get_max_pdf_size_bytes(self) -> int: ...
     def get_app_name(self) -> str: ...
     def get_app_version(self) -> str: ...
     def is_debug(self) -> bool: ...
@@ -31,6 +32,9 @@ def get_config_service() -> ConfigService:
         
         def get_max_pdf_size_mb(self) -> int:
             return self._settings.max_pdf_size_mb
+        
+        def get_max_pdf_size_bytes(self) -> int:
+            return self._settings.max_pdf_size_mb * 1024 * 1024
         
         def get_app_name(self) -> str:
             return self._settings.app_name
