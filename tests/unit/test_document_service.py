@@ -4,7 +4,7 @@ Tests unitarios para el servicio de aplicación DocumentService.
 
 import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 
 @pytest.mark.asyncio
@@ -12,23 +12,22 @@ async def test_document_service_process_and_save_success():
     """Test que procesa y guarda un documento nuevo exitosamente."""
     from app.application.services.document_service import DocumentService
     from app.domain.models.document import Document
-    from app.services.pdf_service import PdfProcessingResult
+    from app.application.pdf.pdf_extractor import PdfProcessingResult
     
     # Mocks
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=None)
     mock_repo.save = AsyncMock(return_value="new-doc-id")
     
-    mock_pdf_service = MagicMock()
-    mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
+    mock_pdf_extractor = MagicMock()
+    mock_pdf_extractor.process_pdf = MagicMock(return_value=PdfProcessingResult(
         checksum="abc123",
-        texto_extraido="texto extraido"
+        extracted_text="texto extraido"
     ))
-    mock_pdf_service.extract_text = MagicMock(return_value="texto extraido")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_extractor=mock_pdf_service
+        pdf_extractor=mock_pdf_extractor
     )
     
     file_bytes = b"test pdf content"
@@ -37,8 +36,11 @@ async def test_document_service_process_and_save_success():
     assert result.is_valid is True
     assert result.document is not None
     assert result.document.id == "new-doc-id"
-    assert result.document.checksum is not None
+    assert result.document.checksum == "abc123"
     assert result.document.extracted_text == "texto extraido"
+    
+    # Verify process_pdf was called once with the file bytes
+    mock_pdf_extractor.process_pdf.assert_called_once_with(file_bytes)
 
 
 @pytest.mark.asyncio
@@ -46,7 +48,7 @@ async def test_document_service_process_duplicate_checksum():
     """Test que rechaza documento con checksum duplicado."""
     from app.application.services.document_service import DocumentService
     from app.domain.models.document import Document
-    from app.services.pdf_service import PdfProcessingResult
+    from app.application.pdf.pdf_extractor import PdfProcessingResult
     
     # Documento existente (solo campos requeridos)
     existing_doc = Document(
@@ -60,16 +62,15 @@ async def test_document_service_process_duplicate_checksum():
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=existing_doc)
     
-    mock_pdf_service = MagicMock()
-    mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
+    mock_pdf_extractor = MagicMock()
+    mock_pdf_extractor.process_pdf = MagicMock(return_value=PdfProcessingResult(
         checksum="duplicate-checksum",
-        texto_extraido="new text"
+        extracted_text="new text"
     ))
-    mock_pdf_service.extract_text = MagicMock(return_value="new text")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_extractor=mock_pdf_service
+        pdf_extractor=mock_pdf_extractor
     )
     
     file_bytes = b"content"
@@ -78,6 +79,9 @@ async def test_document_service_process_duplicate_checksum():
     assert result.is_valid is False
     assert result.document is None
     assert "409 Conflict" in result.error_message or "already exists" in result.error_message
+    
+    # Verify process_pdf was called
+    mock_pdf_extractor.process_pdf.assert_called_once_with(file_bytes)
 
 
 @pytest.mark.asyncio
@@ -211,23 +215,22 @@ async def test_document_service_document_has_only_required_fields():
     """Test que el documento creado tiene solo los 4 campos requeridos."""
     from app.application.services.document_service import DocumentService
     from app.domain.models.document import Document
-    from app.services.pdf_service import PdfProcessingResult
+    from app.application.pdf.pdf_extractor import PdfProcessingResult
     from dataclasses import fields
     
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=None)
     mock_repo.save = AsyncMock(return_value="doc-id")
     
-    mock_pdf_service = MagicMock()
-    mock_pdf_service.process_pdf = MagicMock(return_value=PdfProcessingResult(
+    mock_pdf_extractor = MagicMock()
+    mock_pdf_extractor.process_pdf = MagicMock(return_value=PdfProcessingResult(
         checksum="abc123",
-        texto_extraido="texto extraido"
+        extracted_text="texto extraido"
     ))
-    mock_pdf_service.extract_text = MagicMock(return_value="texto extraido")
     
     service = DocumentService(
         repository=mock_repo,
-        pdf_extractor=mock_pdf_service
+        pdf_extractor=mock_pdf_extractor
     )
     
     file_bytes = b"content"
@@ -241,6 +244,6 @@ async def test_document_service_document_has_only_required_fields():
     assert document_fields == {"id", "checksum", "extracted_text", "created_at"}
     
     # Verificar valores
-    assert document.checksum is not None
+    assert document.checksum == "abc123"
     assert document.extracted_text == "texto extraido"
     assert isinstance(document.created_at, datetime)

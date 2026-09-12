@@ -34,9 +34,13 @@ async def test_validate_checksum_new_file():
     
     service = ChecksumService(repository=mock_repo)
     
+    file_content = b"new content"
+    checksum = hashlib.sha256(file_content).hexdigest()
+    
     dto = DocumentCreateDTO(
-        file_bytes=b"new content",
-        extracted_text="texto extraído"
+        file_bytes=file_content,
+        extracted_text="texto extraído",
+        checksum=checksum
     )
     
     result = await service.validate_and_create_document(dto)
@@ -45,6 +49,7 @@ async def test_validate_checksum_new_file():
     assert result.document is not None
     assert result.error_message is None
     assert result.document.extracted_text == "texto extraído"
+    assert result.document.checksum == checksum
 
 
 @pytest.mark.asyncio
@@ -69,7 +74,8 @@ async def test_validate_checksum_duplicate():
     
     dto = DocumentCreateDTO(
         file_bytes=b"content",
-        extracted_text="new text"
+        extracted_text="new text",
+        checksum="duplicate-checksum"
     )
     
     result = await service.validate_and_create_document(dto)
@@ -103,12 +109,40 @@ async def test_check_duplicate_with_real_checksum():
     
     dto = DocumentCreateDTO(
         file_bytes=file_content,  # Mismo contenido = mismo checksum
-        extracted_text="texto copia"
+        extracted_text="texto copia",
+        checksum=checksum
     )
     
     result = await service.validate_and_create_document(dto)
     
     assert result.is_valid is False
+
+
+@pytest.mark.asyncio
+async def test_validate_checksum_calculates_when_not_provided():
+    """Test que calcula el checksum cuando no se proporciona en el DTO."""
+    from app.application.services.checksum_service import ChecksumService
+    from app.application.dto.document_dto import DocumentCreateDTO
+    
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(return_value=None)
+    
+    service = ChecksumService(repository=mock_repo)
+    
+    file_content = b"content without checksum"
+    expected_checksum = hashlib.sha256(file_content).hexdigest()
+    
+    # DTO sin checksum - debe calcularlo internamente
+    dto = DocumentCreateDTO(
+        file_bytes=file_content,
+        extracted_text="texto extraído"
+    )
+    
+    result = await service.validate_and_create_document(dto)
+    
+    assert result.is_valid is True
+    assert result.document is not None
+    assert result.document.checksum == expected_checksum
 
 
 def test_checksum_uniqueness():
@@ -153,9 +187,13 @@ async def test_created_document_has_minimal_fields():
     
     service = ChecksumService(repository=mock_repo)
     
+    file_content = b"content"
+    checksum = hashlib.sha256(file_content).hexdigest()
+    
     dto = DocumentCreateDTO(
-        file_bytes=b"content",
-        extracted_text="texto extraído"
+        file_bytes=file_content,
+        extracted_text="texto extraído",
+        checksum=checksum
     )
     
     result = await service.validate_and_create_document(dto)

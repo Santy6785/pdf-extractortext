@@ -70,13 +70,14 @@ class ChecksumService:
         Valida la unicidad del checksum y crea un documento si es válido.
         
         Args:
-            dto: DTO con los datos del documento a crear
-            
+            dto: DTO con los datos del documento a crear. Si incluye checksum,
+                 se usa ese valor; si no, se calcula desde file_bytes.
+             
         Returns:
             Resultado de la validación con el documento creado o mensaje de error
         """
-        # Calcular checksum del archivo
-        checksum = self.calculate_checksum(dto.file_bytes)
+        # Usar checksum pre-calculado si está disponible, sino calcularlo
+        checksum = dto.checksum if dto.checksum is not None else self.calculate_checksum(dto.file_bytes)
         
         # Verificar unicidad
         if not await self.is_checksum_unique(checksum):
