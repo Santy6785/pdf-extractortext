@@ -13,6 +13,7 @@ from app.application.services.document_service import DocumentService
 from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDTO, DocumentUpdateDTO
 from app.application.config_service import get_config_service, ConfigService
 from app.api.dependencies import get_document_service, get_database
+from app.config.settings import get_settings
 
 
 router = APIRouter(prefix="/api/v1", tags=["documents"])
@@ -278,12 +279,13 @@ async def health_check(
     try:
         # Verificar conexión a MongoDB
         is_db_connected = database.is_connected()
+        settings = get_settings()
 
         if is_db_connected:
             return {
                 "status": "healthy",
                 "database": "connected",
-                "version": "0.2.0"
+                "version": settings.app_version
             }
         else:
             return JSONResponse(
@@ -291,7 +293,7 @@ async def health_check(
                 content={
                     "status": "unhealthy",
                     "database": "disconnected",
-                    "version": "0.2.0"
+                    "version": settings.app_version
                 }
             )
     except Exception as e:
@@ -300,6 +302,6 @@ async def health_check(
             content={
                 "status": "unhealthy",
                 "error": str(e),
-                "version": "0.2.0"
+                "version": settings.app_version
             }
         )

@@ -6,6 +6,7 @@ import uvicorn
 
 from app.api.routes import router
 from app.api.dependencies import get_database, get_document_service, create_app_with_deps
+from app.config.settings import get_settings
 
 
 @asynccontextmanager
@@ -31,10 +32,11 @@ def create_app() -> FastAPI:
     Factory para crear la aplicación FastAPI.
     Permite configuración flexible y testing.
     """
+    settings = get_settings()
     app = FastAPI(
         title="Extractor de Documentos PDF",
         description="API para extraer texto y metadatos de archivos PDF con persistencia en MongoDB",
-        version="0.2.0",
+        version=settings.app_version,
         lifespan=lifespan
     )
     
@@ -60,10 +62,11 @@ def create_app() -> FastAPI:
             Estado saludable o no saludable con información de la base de datos
         """
         is_db_connected = app.state.database.is_connected()
+        settings = get_settings()
         status_info = {
             "status": "healthy" if is_db_connected else "unhealthy",
             "database": "connected" if is_db_connected else "disconnected",
-            "version": "0.2.0"
+            "version": settings.app_version
         }
         if is_db_connected:
             return status_info
