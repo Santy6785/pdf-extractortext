@@ -3,11 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from io import BytesIO
 from typing import List
+import hashlib
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
-from ...application.pdf.pdf_extractor import PdfExtractor
+from ...application.pdf.pdf_extractor import PdfExtractor, PdfProcessingResult
 
 
 class PdfProcessingError(Exception):
@@ -73,3 +74,24 @@ class PypdfPdfExtractor:
             dimensions.append({"ancho": width, "alto": height})
 
         return PdfMetadata(page_dimensions=dimensions)
+
+    def process_pdf(self, file_bytes: bytes) -> PdfProcessingResult:
+        """Process PDF bytes to extract text and calculate SHA-256 checksum.
+
+        Args:
+            file_bytes: Raw PDF file bytes
+
+        Returns:
+            PdfProcessingResult with checksum and extracted text
+
+        Raises:
+            PdfProcessingError: Si el PDF está corrupto o encriptado
+        """
+        try:
+            checksum = hashlib.sha256(file_bytes).hexdigest()
+            extracted_text = self.extract_text(file_bytes)
+            return PdfProcessingResult(checksum=checksum, extracted_text=extracted_text)
+        except PdfReadError as e:
+            raise PdfProcessingError(f"PDF corrupto o no legible: {str(e)}")
+        except Exception as e:
+            raise PdfProcessingError(f"Error al procesar PDF: {str(e)}")

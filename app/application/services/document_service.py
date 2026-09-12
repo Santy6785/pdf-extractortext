@@ -7,8 +7,7 @@ from typing import List, Optional
 
 from app.domain.models.document import Document
 from app.domain.repositories.document_repository import DocumentRepository
-from app.application.pdf.pdf_extractor import PdfExtractor
-from app.services.pdf_service import PdfProcessingResult
+from app.application.pdf.pdf_extractor import PdfExtractor, PdfProcessingResult
 from app.application.services.checksum_service import ChecksumService
 from app.application.dto.document_dto import (
     DocumentCreateDTO,
@@ -72,30 +71,17 @@ class DocumentService:
             DocumentServiceError: Si hay error al procesar el PDF
         """
         try:
-            # 1. Procesar PDF usando el extractor de la capa de aplicación
-            self._pdf_extractor.extract_metadata(
-                file_bytes
-            )
+            # 1. Procesar PDF usando el extractor (extrae texto y calcula checksum en una sola pasada)
+            pdf_result = self._pdf_extractor.process_pdf(file_bytes)
             
-            # Calcular checksum SHA-256
-            checksum = self._checksum_service.calculate_checksum(file_bytes)
-            
-            # Extraer texto usando el adaptador pypdf
-            texto_extraido = self._pdf_extractor.extract_text(file_bytes)
-            
-            # Crear resultado de procesamiento
-            pdf_result = PdfProcessingResult(
-                checksum=checksum,
-                texto_extraido=texto_extraido
-            )
-            
-            # 2. Crear DTO para validación
+            # 2. Crear DTO para validación con el checksum ya calculado
             create_dto = DocumentCreateDTO(
                 file_bytes=file_bytes,
-                extracted_text=pdf_result.texto_extraido
+                extracted_text=pdf_result.extracted_text,
+                checksum=pdf_result.checksum
             )
             
-            # 3. Validar checksum y crear documento
+            # 3. Validar checksum y crear documento (reutiliza el checksum del DTO)
             validation_result = await self._checksum_service.validate_and_create_document(
                 create_dto
             )

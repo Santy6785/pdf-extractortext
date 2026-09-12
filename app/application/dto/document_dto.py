@@ -13,6 +13,7 @@ class DocumentCreateDTO:
     """DTO para crear un nuevo documento."""
     file_bytes: bytes
     extracted_text: str
+    checksum: str | None = None
 
 
 @dataclass
