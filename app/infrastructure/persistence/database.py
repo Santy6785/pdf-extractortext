@@ -45,18 +45,17 @@ class Database:
             self._client = None
             self._db = None
 
-    def is_connected(self) -> bool:
+    async def is_connected(self) -> bool:
         """
-        Verifica si la conexión a MongoDB está activa.
+        Verifica si la conexión a MongoDB está activa mediante un comando ping.
 
         Returns:
-            True si está conectado, False de lo contrario
+            True si está conectado y responde al ping, False de lo contrario
         """
         if self._client is None or self._db is None:
             return False
         try:
-            # Verificar conexión con un comando simple
-            # Nota: Esto no es async porque es una verificación rápida
+            await self._client.admin.command("ping")
             return True
         except Exception:
             return False

@@ -324,7 +324,7 @@ async def health_check(
     """
     try:
         # Verificar conexión a MongoDB
-        is_db_connected = database.is_connected()
+        is_db_connected = await database.is_connected()
         settings = get_settings()
 
         if is_db_connected:
