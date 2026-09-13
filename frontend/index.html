@@ -268,8 +268,6 @@
     <script>
         // Variables globales
         let selectedFile = null;
-        let extractedTextContent = '';
-        let checksumValue = '';
 
         // Elementos del DOM
         const dropZone = document.getElementById('dropZone');
@@ -391,7 +389,7 @@
                 const formData = new FormData();
                 formData.append('file', selectedFile);
 
-                const response = await fetch(`${API_BASE_URL}/api/v1/documents/`, {
+                const response = await fetch(`${API_BASE_URL}/api/v1/documents/upload`, {
                     method: 'POST',
                     body: formData
                 });
@@ -401,14 +399,10 @@
                     throw new Error(errorData.detail || 'Error al procesar el archivo');
                 }
 
-                // Obtener el texto extraído
-                const text = await response.text();
-                extractedTextContent = text;
-
-                // Extraer checksum del header si está disponible
-                // Como el endpoint actual retorna PlainTextResponse, calculamos el checksum localmente
-                // o podríamos modificar el endpoint para retornarlo
-                checksumValue = await calculateSHA256(selectedFile);
+                // Obtener la respuesta JSON estructurada
+                const data = await response.json();
+                extractedTextContent = data.extracted_text;
+                checksumValue = data.checksum;
 
                 // Mostrar resultados
                 displayResults(text, checksumValue);
@@ -432,14 +426,6 @@
             } finally {
                 setLoading(false);
             }
-        }
-
-        // Calcular SHA-256 del archivo
-        async function calculateSHA256(file) {
-            const buffer = await file.arrayBuffer();
-            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
 
         // Mostrar resultados
@@ -489,9 +475,10 @@
 
         // Descargar texto como archivo
         function downloadText() {
-            if (!extractedTextContent) return;
+            const text = extractedTextArea.value;
+            if (!text) return;
             
-            const blob = new Blob([extractedTextContent], { type: 'text/plain;charset=utf-8' });
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             

@@ -8,9 +8,9 @@ class TestUploadPdfEndpoint:
         # Arrange: Crear un archivo de texto que NO es PDF
         fake_file = io.BytesIO(b"Este no es un PDF, es texto plano")
 
-        # Act: Intentar subir el archivo
+        # Act: Intentar subir el archivo al endpoint nuevo
         response = client.post(
-            "/api/v1/documents/",
+            "/api/v1/documents/upload",
             files={"file": ("documento.txt", fake_file, "text/plain")}
         )
 

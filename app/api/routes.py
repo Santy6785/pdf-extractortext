@@ -237,17 +237,38 @@ async def delete_document(
     return None
 
 
-# Endpoint legacy mantenido para compatibilidad (ahora redirige al nuevo)
-@router.post("/documents/")
+# Endpoint legacy mantenido para compatibilidad (deprecated)
+@router.post(
+    "/documents/",
+    deprecated=True,
+    include_in_schema=True,
+    summary="[DEPRECATED] Subir documento PDF (retorna .txt)",
+    description=(
+        "**Obsoleto**: Use POST /api/v1/documents/upload en su lugar.\n\n"
+        "Este endpoint se mantiene solo para retrocompatibilidad con el frontend legacy. "
+        "Consumidor actual: frontend web (frontend/index.html).\n\n"
+        "Retorna un archivo de texto plano (.txt) con el contenido extraído, "
+        "en lugar de una respuesta JSON estructurada."
+    ),
+    response_class=PlainTextResponse,
+)
 async def upload_document_legacy(
     file: UploadFile = File(...),
     service: DocumentService = Depends(get_document_service)
 ):
     """
-    [LEGACY] Endpoint anterior para subir documentos.
+    [LEGACY/DEPRECATED] Endpoint anterior para subir documentos.
     
-    Ahora redirige al nuevo endpoint /documents/upload.
-    Retorna archivo de texto con el contenido extraído.
+    **Consumidor**: Frontend web (frontend/index.html) - pendiente migración.
+    
+    Use POST /api/v1/documents/upload para nuevas integraciones.
+    Retorna archivo de texto plano (.txt) con el contenido extraído.
+    
+    Returns:
+        PlainTextResponse: Archivo .txt descargable con texto extraído
+    
+    Raises:
+        HTTPException: 400 si no es PDF o excede tamaño, 409 si ya existe, 422 si está corrupto
     """
     validate_pdf_file(file)
     file_bytes = await file.read()

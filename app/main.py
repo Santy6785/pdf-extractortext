@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 
 from app.api.routes import router
-from app.api.dependencies import get_database
+from app.api.dependencies import get_database, get_document_service
 from app.config.settings import get_settings
 
 

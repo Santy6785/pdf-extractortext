@@ -8,8 +8,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-class TestDocumentEndpoint:
-    """Tests para el endpoint POST /api/v1/documents/"""
+class TestDocumentUploadEndpoint:
+    """Tests para el endpoint POST /api/v1/documents/upload"""
 
     def test_reject_non_pdf_files(self, client: TestClient):
         """
@@ -20,7 +20,7 @@ class TestDocumentEndpoint:
 
         # Act: Intentar subir el archivo
         response = client.post(
-            "/api/v1/documents/",
+            "/api/v1/documents/upload",
             files={"file": ("documento.txt", fake_file, "text/plain")}
         )
 
@@ -30,27 +30,29 @@ class TestDocumentEndpoint:
 
     def test_process_valid_pdf(self, client: TestClient):
         """
-        RED: El sistema debe procesar un PDF valido y retornar un archivo .txt
-        con el texto extraido descargable.
+        RED: El sistema debe procesar un PDF valido y retornar JSON estructurado
+        con el texto extraído, checksum y metadatos.
         """
         # Arrange: Crear un PDF minimo en memoria
-        # Este es un PDF valido de 1 pagina con texto "Hola Mundo"
         pdf_content = self._create_minimal_pdf()
         pdf_file = io.BytesIO(pdf_content)
 
         # Act: Subir el PDF
         response = client.post(
-            "/api/v1/documents/",
+            "/api/v1/documents/upload",
             files={"file": ("test_document.pdf", pdf_file, "application/pdf")}
         )
 
         # Assert: Verificar respuesta exitosa
         assert response.status_code == 200
-        # La respuesta ahora es texto plano (archivo .txt)
-        assert response.headers["content-type"] == "text/plain; charset=utf-8"
-        # Verificar que el header indica que es un archivo descargable
-        assert "attachment" in response.headers.get("content-disposition", "")
-        assert "test_document.txt" in response.headers.get("content-disposition", "")
+        # La respuesta ahora es JSON estructurado
+        assert response.headers["content-type"] == "application/json"
+        data = response.json()
+        # Verificar campos requeridos en la respuesta
+        assert "id" in data
+        assert "checksum" in data
+        assert "extracted_text" in data
+        assert "created_at" in data
 
     def _create_minimal_pdf(self) -> bytes:
         """
