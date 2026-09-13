@@ -70,29 +70,19 @@ class MongoDocumentRepository(DocumentRepository):
             
         return Document.from_dict(data)
     
-    async def save(self, document: Document) -> str:
+    async def insert(self, document: Document) -> str:
         """
-        Guarda un documento en MongoDB.
-        
+        Inserta un documento nuevo en MongoDB.
+
         Args:
-            document: Documento a guardar
-            
+            document: Documento a insertar
+
         Returns:
-            ID del documento guardado
+            ID del documento insertado
         """
         doc_dict = self._document_to_dict(document)
-        
-        # Si ya tiene ID, es actualización; si no, es inserción
-        if document.id and ObjectId.is_valid(document.id):
-            await self._collection.update_one(
-                {"_id": ObjectId(document.id)},
-                {"$set": doc_dict},
-                upsert=True
-            )
-            return document.id
-        else:
-            result = await self._collection.insert_one(doc_dict)
-            return str(result.inserted_id)
+        result = await self._collection.insert_one(doc_dict)
+        return str(result.inserted_id)
     
     async def find_by_id(self, document_id: str) -> Optional[Document]:
         """

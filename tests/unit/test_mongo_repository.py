@@ -21,8 +21,8 @@ def mock_motor_collection():
 
 
 @pytest.mark.asyncio
-async def test_mongo_repository_save(mock_motor_collection):
-    """Test que guarda un documento en MongoDB."""
+async def test_mongo_repository_insert(mock_motor_collection):
+    """Test que inserta un documento en MongoDB."""
     from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
     from app.domain.models.document import Document
 
@@ -39,7 +39,7 @@ async def test_mongo_repository_save(mock_motor_collection):
         id=None
     )
 
-    result = await repository.save(document)
+    result = await repository.insert(document)
 
     mock_motor_collection.insert_one.assert_called_once()
     assert isinstance(result, str)
@@ -247,7 +247,7 @@ async def test_mongo_repository_schema_fields():
     collection.insert_one = AsyncMock(return_value=insert_result)
 
     repository = MongoDocumentRepository(collection)
-    await repository.save(doc)
+    await repository.insert(doc)
 
     # Verificar que se llamó a insert_one
     assert collection.insert_one.called

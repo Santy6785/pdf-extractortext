@@ -17,7 +17,7 @@ async def test_document_service_process_and_save_success():
     # Mocks
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=None)
-    mock_repo.save = AsyncMock(return_value="new-doc-id")
+    mock_repo.insert = AsyncMock(return_value="new-doc-id")
     
     mock_pdf_extractor = MagicMock()
     mock_pdf_extractor.process_pdf = MagicMock(return_value=PdfProcessingResult(
@@ -220,7 +220,7 @@ async def test_document_service_document_has_only_required_fields():
     
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=None)
-    mock_repo.save = AsyncMock(return_value="doc-id")
+    mock_repo.insert = AsyncMock(return_value="doc-id")
     
     mock_pdf_extractor = MagicMock()
     mock_pdf_extractor.process_pdf = MagicMock(return_value=PdfProcessingResult(

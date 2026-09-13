@@ -91,7 +91,7 @@ class DocumentService:
             
             # 4. Guardar en base de datos
             document = validation_result.document
-            document_id = await self._repository.save(document)
+            document_id = await self._repository.insert(document)
             document.id = document_id
             
             return ChecksumValidationResult(

@@ -18,18 +18,15 @@ class DocumentRepository(ABC):
     """
     
     @abstractmethod
-    async def save(self, document: Document) -> str:
+    async def insert(self, document: Document) -> str:
         """
-        Guarda un documento en la base de datos.
-        
-        Si el documento trae ID, realiza un upsert (actualiza si existe, inserta si no).
-        Si no trae ID, realiza una inserción nueva.
-        
+        Inserta un documento nuevo en la base de datos.
+
         Args:
-            document: Documento a guardar
-            
+            document: Documento a insertar
+
         Returns:
-            ID del documento guardado
+            ID del documento insertado
         """
         pass
     

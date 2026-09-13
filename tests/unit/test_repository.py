@@ -9,25 +9,25 @@ from unittest.mock import AsyncMock, MagicMock
 
 
 @pytest.mark.asyncio
-async def test_repository_save_document():
-    """Test que el repositorio puede guardar un documento."""
+async def test_repository_insert_document():
+    """Test que el repositorio puede insertar un documento."""
     from app.domain.repositories.document_repository import DocumentRepository
     from app.domain.models.document import Document
-    
+
     # Crear mock del repositorio
     mock_repo = MagicMock(spec=DocumentRepository)
-    mock_repo.save = AsyncMock(return_value="doc-123")
-    
+    mock_repo.insert = AsyncMock(return_value="doc-123")
+
     document = Document(
         id="",
         checksum="abc123",
         extracted_text="contenido",
         created_at=datetime.now()
     )
-    
-    result = await mock_repo.save(document)
-    
-    mock_repo.save.assert_called_once_with(document)
+
+    result = await mock_repo.insert(document)
+
+    mock_repo.insert.assert_called_once_with(document)
     assert result == "doc-123"
 
 
