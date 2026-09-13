@@ -71,7 +71,7 @@ class PypdfPdfExtractor:
         for page in reader.pages:
             width = float(page.mediabox.width)
             height = float(page.mediabox.height)
-            dimensions.append({"ancho": width, "alto": height})
+            dimensions.append({"width": width, "height": height})
 
         return PdfMetadata(page_dimensions=dimensions)
 

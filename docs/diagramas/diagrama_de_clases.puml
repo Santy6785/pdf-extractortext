@@ -24,38 +24,38 @@ title Diagrama de Clases del Sistema\nPDF Extractor API
 
 package "Dominio" <<Dominio>> {
 
-    class Documento {
+    class Document {
         + checksum: str
-        + texto_extraido: str
-        + fecha_creacion: datetime
-        + id: str (opcional)
+        + extracted_text: str
+        + created_at: datetime
+        + id: str (optional)
         + to_dict(): dict
-        + from_dict(data: dict): Documento
+        + from_dict(data: dict): Document
     }
 
-    abstract class RepositorioDocumentos <<Repositorio>> {
-        + guardar(documento: Documento): str
-        + buscar_por_id(id: str): Documento (opcional)
-        + buscar_por_checksum(checksum: str): Documento (opcional)
-        + listar(skip: int, limit: int): Lista~Documento~
-        + actualizar(id: str, documento: Documento): bool
-        + eliminar(id: str): bool
+    abstract class DocumentRepository <<Repository>> {
+        + save(document: Document): str
+        + find_by_id(id: str): Document (optional)
+        + find_by_checksum(checksum: str): Document (optional)
+        + find_all(skip: int, limit: int): List~Document~
+        + update(id: str, document: Document): bool
+        + delete(id: str): bool
     }
 
-    class ServicioPdf {
-        + procesar_pdf(bytes: bytes, nombre: str): ResultadoPdf
-        - _calcular_checksum(bytes: bytes): str
-        - _extraer_texto(bytes: bytes): str
+    class PdfService {
+        + process_pdf(bytes: bytes, filename: str): PdfProcessingResult
+        - _calculate_checksum(bytes: bytes): str
+        - _extract_text(bytes: bytes): str
     }
 
-    class ResultadoPdf {
-        + nombre_archivo: str
+    class PdfProcessingResult {
+        + filename: str
         + checksum: str
-        + texto_extraido: str
+        + extracted_text: str
     }
 
-    class ErrorProcesamientoPdf {
-        + mensaje: str
+    class PdfProcessingError {
+        + message: str
     }
 }
 
@@ -65,57 +65,57 @@ package "Dominio" <<Dominio>> {
 
 package "Aplicación" <<Aplicacion>> {
 
-    class ServicioDocumento {
-        - repositorio: RepositorioDocumentos
-        - servicio_pdf: ServicioPdf
-        - servicio_checksum: ServicioChecksum
-        + procesar_y_guardar(bytes: bytes, nombre: str): ResultadoValidacion
-        + obtener_todos(skip: int, limit: int): Lista~DocumentoResumen~
-        + obtener_por_id(id: str): DocumentoCompleto (opcional)
-        + actualizar(id: str, texto: str): DocumentoCompleto (opcional)
-        + eliminar(id: str): bool
-        + existe_por_checksum(checksum: str): bool
+    class DocumentService {
+        - repository: DocumentRepository
+        - pdf_service: PdfService
+        - checksum_service: ChecksumService
+        + process_and_save(bytes: bytes, filename: str): ValidationResult
+        + get_all(skip: int, limit: int): List~DocumentListDTO~
+        + get_by_id(id: str): DocumentResponseDTO (optional)
+        + update(id: str, text: str): DocumentResponseDTO (optional)
+        + delete(id: str): bool
+        + exists_by_checksum(checksum: str): bool
     }
 
-    class ServicioChecksum {
-        - repositorio: RepositorioDocumentos (opcional)
-        + calcular_checksum(bytes: bytes): str
-        + es_unico(checksum: str): bool
-        + validar_y_crear(dto: CrearDocumento): ResultadoValidacion
+    class ChecksumService {
+        - repository: DocumentRepository (optional)
+        + calculate_checksum(bytes: bytes): str
+        + is_unique(checksum: str): bool
+        + validate_and_create(dto: DocumentCreateDTO): ValidationResult
     }
 
-    class CrearDocumento {
-        + bytes_archivo: bytes
-        + texto_extraido: str
+    class DocumentCreateDTO {
+        + file_bytes: bytes
+        + extracted_text: str
     }
 
-    class ActualizarDocumento {
-        + texto_extraido: str
+    class DocumentUpdateDTO {
+        + extracted_text: str
     }
 
-    class DocumentoCompleto {
+    class DocumentResponseDTO {
         + id: str
         + checksum: str
-        + texto_extraido: str
-        + fecha_creacion: datetime
-        + from_entity(documento: Documento): DocumentoCompleto
+        + extracted_text: str
+        + created_at: datetime
+        + from_entity(document: Document): DocumentResponseDTO
     }
 
-    class DocumentoResumen {
+    class DocumentListDTO {
         + id: str
         + checksum: str
-        + fecha_creacion: datetime
-        + from_entity(documento: Documento): DocumentoResumen
+        + created_at: datetime
+        + from_entity(document: Document): DocumentListDTO
     }
 
-    class ResultadoValidacion {
-        + es_valido: bool
-        + documento: Documento (opcional)
-        + mensaje_error: str (opcional)
+    class ChecksumValidationResult {
+        + is_valid: bool
+        + document: Document (optional)
+        + error_message: str (optional)
     }
 
-    class ErrorServicioDocumento {
-        + mensaje: str
+    class DocumentServiceError {
+        + message: str
     }
 }
 
@@ -125,33 +125,33 @@ package "Aplicación" <<Aplicacion>> {
 
 package "Infraestructura" <<Infraestructura>> {
 
-    class RepositorioDocumentosMongo {
-        - coleccion: AsyncIOMotorCollection
-        + guardar(documento: Documento): str
-        + buscar_por_id(id: str): Documento (opcional)
-        + buscar_por_checksum(checksum: str): Documento (opcional)
-        + listar(skip: int, limit: int): Lista~Documento~
-        + actualizar(id: str, documento: Documento): bool
-        + eliminar(id: str): bool
-        - _a_diccionario(documento: Documento): dict
-        - _a_documento(datos: dict): Documento (opcional)
+    class MongoDocumentRepository {
+        - collection: AsyncIOMotorCollection
+        + save(document: Document): str
+        + find_by_id(id: str): Document (optional)
+        + find_by_checksum(checksum: str): Document (optional)
+        + find_all(skip: int, limit: int): List~Document~
+        + update(id: str, document: Document): bool
+        + delete(id: str): bool
+        - _to_dict(document: Document): dict
+        - _to_document(data: dict): Document (optional)
     }
 
-    class BaseDatos {
-        - instancia: BaseDatos {estático}
-        - cliente: AsyncIOMotorClient
-        + conectar(): void
-        + desconectar(): void
-        + esta_conectado(): bool
-        + obtener_coleccion(nombre: str): Coleccion
+    class Database {
+        - instance: Database {static}
+        - client: AsyncIOMotorClient
+        + connect(): void
+        + disconnect(): void
+        + is_connected(): bool
+        + get_collection(name: str): Collection
     }
 
-    class Configuracion {
-        + url_mongodb: str
-        + nombre_bd: str
-        + nombre_app: str
+    class Config {
+        + mongodb_url: str
+        + db_name: str
+        + app_name: str
         + version: str
-        + max_tamano_pdf_mb: int
+        + max_pdf_size_mb: int
     }
 }
 
@@ -161,22 +161,22 @@ package "Infraestructura" <<Infraestructura>> {
 
 package "API" <<Interfaz>> {
 
-    class Rutas {
-        + listar_documentos(skip, limit): Lista~DocumentoResumen~
-        + obtener_documento(id): DocumentoCompleto
-        + actualizar_documento(id, datos): DocumentoCompleto
-        + subir_documento(archivo): DocumentoCompleto
-        + eliminar_documento(id): void
-        + verificar_salud(): dict
+    class Routes {
+        + list_documents(skip, limit): List~DocumentListDTO~
+        + get_document(id): DocumentResponseDTO
+        + update_document(id, data): DocumentResponseDTO
+        + upload_document(file): DocumentResponseDTO
+        + delete_document(id): void
+        + health_check(): dict
     }
 
-    class Dependencias {
-        + obtener_repositorio(): RepositorioDocumentos
-        + obtener_servicio_documento(): ServicioDocumento
+    class Dependencies {
+        + get_repository(): DocumentRepository
+        + get_document_service(): DocumentService
     }
 
-    class AplicacionPrincipal {
-        + crear_app(): FastAPI
+    class MainApp {
+        + create_app(): FastAPI
         + app: FastAPI
     }
 }
@@ -185,34 +185,34 @@ package "API" <<Interfaz>> {
 ' RELACIONES PRINCIPALES
 ' ============================================================================
 
-' -- Herencia --
-RepositorioDocumentosMongo ..|> RepositorioDocumentos
+' -- Inheritance --
+MongoDocumentRepository ..|> DocumentRepository
 
-' -- Composición --
-ServicioDocumento *-- RepositorioDocumentos
-ServicioDocumento *-- ServicioPdf
-ServicioDocumento *-- ServicioChecksum
-ServicioChecksum *-- RepositorioDocumentos
-RepositorioDocumentosMongo *-- BaseDatos
+' -- Composition --
+DocumentService *-- DocumentRepository
+DocumentService *-- PdfService
+DocumentService *-- ChecksumService
+ChecksumService *-- DocumentRepository
+MongoDocumentRepository *-- Database
 
-' -- Dependencias --
-ServicioDocumento ..> ResultadoValidacion
-ServicioDocumento ..> DocumentoCompleto
-ServicioDocumento ..> DocumentoResumen
-ServicioChecksum ..> ResultadoValidacion
-BaseDatos ..> Configuracion
+' -- Dependencies --
+DocumentService ..> ChecksumValidationResult
+DocumentService ..> DocumentResponseDTO
+DocumentService ..> DocumentListDTO
+ChecksumService ..> ChecksumValidationResult
+Database ..> Config
 
 ' -- DTOs --
-DocumentoCompleto ..> Documento
-DocumentoResumen ..> Documento
+DocumentResponseDTO ..> Document
+DocumentListDTO ..> Document
 
 ' -- API --
-Rutas ..> ServicioDocumento
-Rutas ..> DocumentoCompleto
-Rutas ..> DocumentoResumen
-Dependencias ..> RepositorioDocumentosMongo
-Dependencias ..> ServicioDocumento
-AplicacionPrincipal ..> Rutas
-AplicacionPrincipal ..> BaseDatos
+Routes ..> DocumentService
+Routes ..> DocumentResponseDTO
+Routes ..> DocumentListDTO
+Dependencies ..> MongoDocumentRepository
+Dependencies ..> DocumentService
+MainApp ..> Routes
+MainApp ..> Database
 
 @enduml

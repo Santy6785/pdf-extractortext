@@ -14,9 +14,9 @@ from pypdf.errors import PdfReadError
 
 @dataclass
 class PdfProcessingResult:
-    """DTO para el resultado del procesamiento de PDF."""
+    """DTO for the result of PDF processing."""
     checksum: str
-    texto_extraido: str
+    extracted_text: str
 
 
 class PdfProcessingError(Exception):
@@ -57,7 +57,7 @@ class PdfService:
             
             return PdfProcessingResult(
                 checksum=checksum,
-                texto_extraido=texto
+                extracted_text=texto
             )
             
         except PdfReadError as e:
