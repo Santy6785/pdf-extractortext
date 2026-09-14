@@ -10,6 +10,9 @@ from app.domain.repositories.document_repository import DocumentRepository
 from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
 from app.infrastructure.persistence.database import Database, get_documents_collection
 from app.application.services.document_service import DocumentService
+from app.application.services.document_ingestion_service import DocumentIngestionService
+from app.application.services.checksum_service import ChecksumService
+from app.infrastructure.pdf.pypdf_extractor import PypdfPdfExtractor
 
 
 def get_document_repository() -> DocumentRepository:
@@ -32,6 +35,24 @@ def get_document_service() -> DocumentService:
     """
     repository = get_document_repository()
     return DocumentService(repository)
+
+
+def get_ingestion_service() -> DocumentIngestionService:
+    """
+    Factory que proporciona un servicio de ingesta de documentos configurado.
+
+    Wiring explícito de todas las dependencias del pipeline de ingesta:
+    repositorio, extractor de PDF y servicio de checksum.
+
+    Returns:
+        DocumentIngestionService con todas sus dependencias inyectadas
+    """
+    repository = get_document_repository()
+    return DocumentIngestionService(
+        repository=repository,
+        pdf_extractor=PypdfPdfExtractor(),
+        checksum_service=ChecksumService(repository)
+    )
 
 
 def get_database_instance() -> Database:

@@ -10,10 +10,11 @@ from typing import List, Optional
 
 from app.services.pdf_service import PdfProcessingError
 from app.application.services.document_service import DocumentService
+from app.application.services.document_ingestion_service import DocumentIngestionService
 from app.application.dto.document_dto import DocumentResponseDTO, DocumentListDTO, DocumentUpdateDTO
 from app.application.config_service import get_config_service, ConfigService
 from app.infrastructure.persistence.database import Database
-from app.api.dependencies import get_document_service, get_database
+from app.api.dependencies import get_document_service, get_ingestion_service, get_database
 from app.config.settings import get_settings
 from app.domain.exceptions import DocumentNotFoundError
 
@@ -223,7 +224,7 @@ async def update_document(
 @router.post("/documents/upload", response_model=DocumentResponseDTO)
 async def upload_document(
     file: UploadFile = File(...),
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentIngestionService = Depends(get_ingestion_service)
 ):
     """
     Endpoint para subir y procesar un documento PDF.
@@ -298,7 +299,7 @@ async def delete_document(
 )
 async def upload_document_legacy(
     file: UploadFile = File(...),
-    service: DocumentService = Depends(get_document_service)
+    service: DocumentIngestionService = Depends(get_ingestion_service)
 ):
     """
     [LEGACY/DEPRECATED] Endpoint anterior para subir documentos.
