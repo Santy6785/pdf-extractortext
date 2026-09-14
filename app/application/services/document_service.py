@@ -73,35 +73,60 @@ class DocumentService:
         try:
             # 1. Procesar PDF usando el extractor (extrae texto y calcula checksum en una sola pasada)
             pdf_result = self._pdf_extractor.process_pdf(file_bytes)
-            
-            # 2. Crear DTO para validación con el checksum ya calculado
-            create_dto = DocumentCreateDTO(
-                file_bytes=file_bytes,
-                extracted_text=pdf_result.extracted_text,
-                checksum=pdf_result.checksum
-            )
-            
+
+            # 2. Construir DTO de creación con el checksum ya calculado
+            create_dto = self._build_create_dto(file_bytes, pdf_result)
+
             # 3. Validar checksum y crear documento (reutiliza el checksum del DTO)
             validation_result = await self._checksum_service.validate_and_create_document(
                 create_dto
             )
-            
+
             if not validation_result.is_valid:
                 return validation_result
-            
-            # 4. Guardar en base de datos
-            document = validation_result.document
-            document_id = await self._repository.insert(document)
-            document.id = document_id
-            
+
+            # 4. Persistir el documento
+            document = await self._save_document(validation_result.document)
+
             return ChecksumValidationResult(
                 is_valid=True,
                 document=document,
                 error_message=None
             )
-            
+
         except Exception as e:
             raise DocumentServiceError(f"Error processing document: {str(e)}")
+
+    @staticmethod
+    def _build_create_dto(file_bytes: bytes, pdf_result: PdfProcessingResult) -> DocumentCreateDTO:
+        """
+        Construye el DTO de creación a partir del resultado del procesamiento del PDF.
+
+        Args:
+            file_bytes: Contenido del archivo original
+            pdf_result: Resultado del extractor (texto y checksum)
+
+        Returns:
+            DTO listo para validación de checksum
+        """
+        return DocumentCreateDTO(
+            file_bytes=file_bytes,
+            extracted_text=pdf_result.extracted_text,
+            checksum=pdf_result.checksum
+        )
+
+    async def _save_document(self, document: Document) -> Document:
+        """
+        Persiste un documento en el repositorio y le asigna el ID generado.
+
+        Args:
+            document: Documento a persistir
+
+        Returns:
+            El mismo documento con su ID asignado
+        """
+        document.id = await self._repository.insert(document)
+        return document
     
     async def get_all(self, skip: int = 0, limit: int = 20) -> List[DocumentListDTO]:
         """

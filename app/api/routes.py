@@ -65,6 +65,63 @@ def validate_pdf_size(file_bytes: bytes, config: ConfigService) -> None:
         )
 
 
+async def _read_and_validate_upload(file: UploadFile) -> bytes:
+    """
+    Valida y lee completamente un archivo PDF subido.
+
+    Pasos:
+    1. Valida que sea un PDF (tipo MIME y extensión)
+    2. Lee el contenido completo en memoria
+    3. Valida que no exceda el tamaño máximo configurado
+
+    Args:
+        file: Archivo subido
+
+    Returns:
+        Contenido del archivo en bytes
+
+    Raises:
+        HTTPException: 400 si no es PDF o excede el tamaño máximo
+    """
+    validate_pdf_file(file)
+    file_bytes = await file.read()
+    validate_pdf_size(file_bytes, get_config_service())
+    return file_bytes
+
+
+def _raise_conflict_if_invalid(result) -> None:
+    """
+    Lanza HTTP 409 si el resultado de validación de checksum no es válido.
+
+    Args:
+        result: ChecksumValidationResult del servicio de documentos
+
+    Raises:
+        HTTPException: 409 si el documento ya existe
+    """
+    if not result.is_valid:
+        raise HTTPException(
+            status_code=409,
+            detail=result.error_message
+        )
+
+
+def _raise_pdf_processing_error(error: PdfProcessingError) -> None:
+    """
+    Convierte un error de procesamiento de PDF en HTTP 422.
+
+    Args:
+        error: Excepción de procesamiento de PDF
+
+    Raises:
+        HTTPException: 422 con el detalle del error
+    """
+    raise HTTPException(
+        status_code=422,
+        detail=f"No se pudo procesar el PDF: {str(error)}"
+    )
+
+
 def raise_document_not_found(document_id: str) -> None:
     """
     Lanza una excepción HTTP 404 para documento no encontrado.
@@ -185,34 +242,18 @@ async def upload_document(
     Raises:
         HTTPException: 400 si no es PDF o excede tamaño, 409 si ya existe, 422 si está corrupto
     """
-    # 1. Validacion de tipo de archivo
-    validate_pdf_file(file)
-
-    # 2. Leer archivo completamente en memoria (bytes)
-    file_bytes = await file.read()
-
-    # 3. Validar tamaño máximo después de leer (usando validación centralizada)
-    config: ConfigService = get_config_service()
-    validate_pdf_size(file_bytes, config)
+    # 1. Leer y validar el archivo subido (tipo y tamaño)
+    file_bytes = await _read_and_validate_upload(file)
 
     try:
-        # 4. Procesar y guardar con validación de checksum
+        # 2. Procesar y guardar con validación de checksum
         result = await service.process_and_save(file_bytes, file.filename)
-
-        if not result.is_valid:
-            raise HTTPException(
-                status_code=409,
-                detail=result.error_message
-            )
-
+        _raise_conflict_if_invalid(result)
         return DocumentResponseDTO.from_entity(result.document)
 
     except PdfProcessingError as e:
         # Convertir error de dominio a HTTP 422
-        raise HTTPException(
-            status_code=422,
-            detail=f"No se pudo procesar el PDF: {str(e)}"
-        )
+        _raise_pdf_processing_error(e)
 
 
 @router.delete("/documents/{document_id}", status_code=204)
@@ -270,21 +311,11 @@ async def upload_document_legacy(
     Raises:
         HTTPException: 400 si no es PDF o excede tamaño, 409 si ya existe, 422 si está corrupto
     """
-    validate_pdf_file(file)
-    file_bytes = await file.read()
-    
-    # Validar tamaño máximo (usando validación centralizada)
-    config: ConfigService = get_config_service()
-    validate_pdf_size(file_bytes, config)
+    file_bytes = await _read_and_validate_upload(file)
     
     try:
         result = await service.process_and_save(file_bytes, file.filename)
-        
-        if not result.is_valid:
-            raise HTTPException(
-                status_code=409,
-                detail=result.error_message
-            )
+        _raise_conflict_if_invalid(result)
         
         # Generar nombre del archivo de salida
         base_name = file.filename.rsplit('.', 1)[0] if file.filename else "documento"
@@ -300,10 +331,7 @@ async def upload_document_legacy(
         )
         
     except PdfProcessingError as e:
-        raise HTTPException(
-            status_code=422,
-            detail=f"No se pudo procesar el PDF: {str(e)}"
-        )
+        _raise_pdf_processing_error(e)
 
 
 # ==================== ENDPOINTS DE SALUD ====================
