@@ -145,20 +145,23 @@ def raise_document_not_found(document_id: str) -> None:
 @router.get("/documents/", response_model=List[DocumentListDTO])
 async def list_documents(
     skip: int = Query(0, ge=0, description="Número de documentos a saltar"),
-    limit: int = Query(20, ge=1, le=100, description="Número máximo de documentos a retornar"),
-    service: DocumentService = Depends(get_document_service)
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Número máximo de documentos a retornar"),
+    service: DocumentService = Depends(get_document_service),
+    config: ConfigService = Depends(get_config_service)
 ):
     """
     Lista todos los documentos almacenados con paginación.
 
     Args:
         skip: Número de documentos a saltar (offset)
-        limit: Número máximo de documentos a retornar (máx 100)
+        limit: Número máximo de documentos a retornar (máx 100).
+            Si no se especifica, se usa default_page_size de la configuración.
 
     Returns:
         Lista de documentos con id, checksum y fecha de creación
     """
-    documents = await service.get_all(skip=skip, limit=limit)
+    effective_limit = limit if limit is not None else config.get_default_page_size()
+    documents = await service.get_all(skip=skip, limit=effective_limit)
     return documents
 
 

@@ -16,6 +16,7 @@ class ConfigService(Protocol):
     def get_app_name(self) -> str: ...
     def get_app_version(self) -> str: ...
     def is_debug(self) -> bool: ...
+    def get_default_page_size(self) -> int: ...
 
 
 def get_config_service() -> ConfigService:
@@ -44,5 +45,8 @@ def get_config_service() -> ConfigService:
         
         def is_debug(self) -> bool:
             return self._settings.debug
+        
+        def get_default_page_size(self) -> int:
+            return self._settings.default_page_size
     
     return ConcreteConfigService()

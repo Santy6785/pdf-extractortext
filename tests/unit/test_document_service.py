@@ -109,7 +109,7 @@ async def test_document_service_get_all():
     mock_repo.find_all = AsyncMock(return_value=documents)
 
     service = DocumentService(repository=mock_repo)
-    result = await service.get_all()
+    result = await service.get_all(limit=20)
 
     assert len(result) == 2
     assert result[0].checksum == "cs1"

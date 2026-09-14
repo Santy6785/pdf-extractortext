@@ -58,7 +58,7 @@ class DocumentRepository(ABC):
         pass
     
     @abstractmethod
-    async def find_all(self, skip: int = 0, limit: int = 20) -> List[Document]:
+    async def find_all(self, limit: int, skip: int = 0) -> List[Document]:
         """
         Obtiene todos los documentos almacenados con paginación.
 

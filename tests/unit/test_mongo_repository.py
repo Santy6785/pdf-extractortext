@@ -167,11 +167,11 @@ async def test_mongo_repository_find_all(mock_motor_collection):
 
     repository = MongoDocumentRepository(mock_motor_collection)
 
-    result = await repository.find_all()
+    result = await repository.find_all(limit=20)
 
     assert len(result) == 2
     assert all(doc.checksum in ["cs1", "cs2"] for doc in result)
-    # Verify default pagination
+    # Verify pagination
     mock_motor_collection.find.return_value.skip.assert_called_once_with(0)
     mock_motor_collection.find.return_value.limit.assert_called_once_with(20)
 

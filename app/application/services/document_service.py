@@ -128,7 +128,7 @@ class DocumentService:
         document.id = await self._repository.insert(document)
         return document
     
-    async def get_all(self, skip: int = 0, limit: int = 20) -> List[DocumentListDTO]:
+    async def get_all(self, limit: int, skip: int = 0) -> List[DocumentListDTO]:
         """
         Obtiene todos los documentos en formato resumido con paginación.
 
