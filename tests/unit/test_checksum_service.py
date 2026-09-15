@@ -43,13 +43,11 @@ async def test_validate_checksum_new_file():
         checksum=checksum
     )
     
-    result = await service.validate_and_create_document(dto)
-    
+    result = await service.validate(dto)
+
     assert result.is_valid is True
-    assert result.document is not None
+    assert result.checksum == checksum
     assert result.error_message is None
-    assert result.document.extracted_text == "texto extraído"
-    assert result.document.checksum == checksum
 
 
 @pytest.mark.asyncio
@@ -78,10 +76,10 @@ async def test_validate_checksum_duplicate():
         checksum="duplicate-checksum"
     )
     
-    result = await service.validate_and_create_document(dto)
-    
+    result = await service.validate(dto)
+
     assert result.is_valid is False
-    assert result.document is None
+    assert result.checksum is None
     assert "already exists" in result.error_message or "existente" in result.error_message
 
 
@@ -113,8 +111,8 @@ async def test_check_duplicate_with_real_checksum():
         checksum=checksum
     )
     
-    result = await service.validate_and_create_document(dto)
-    
+    result = await service.validate(dto)
+
     assert result.is_valid is False
 
 
@@ -138,11 +136,10 @@ async def test_validate_checksum_calculates_when_not_provided():
         extracted_text="texto extraído"
     )
     
-    result = await service.validate_and_create_document(dto)
-    
+    result = await service.validate(dto)
+
     assert result.is_valid is True
-    assert result.document is not None
-    assert result.document.checksum == expected_checksum
+    assert result.checksum == expected_checksum
 
 
 def test_checksum_uniqueness():
@@ -175,36 +172,12 @@ def test_checksum_consistency():
     assert checksum1 == checksum2 == checksum3
 
 
-@pytest.mark.asyncio
-async def test_created_document_has_minimal_fields():
-    """Test que el documento creado tiene solo los campos requeridos."""
-    from app.application.services.checksum_service import ChecksumService
-    from app.application.dto.document_dto import DocumentCreateDTO
-    from dataclasses import fields
-    
-    mock_repo = MagicMock()
-    mock_repo.find_by_checksum = AsyncMock(return_value=None)
-    
-    service = ChecksumService(repository=mock_repo)
-    
-    file_content = b"content"
-    checksum = hashlib.sha256(file_content).hexdigest()
-    
-    dto = DocumentCreateDTO(
-        file_bytes=file_content,
-        extracted_text="texto extraído",
-        checksum=checksum
-    )
-    
-    result = await service.validate_and_create_document(dto)
-    
-    assert result.is_valid is True
-    document = result.document
-    
-    # Verificar campos del documento
-    document_fields = {f.name for f in fields(document)}
-    assert document_fields == {"id", "checksum", "extracted_text", "created_at"}
-    
-    # Verificar que no tiene campos no deseados
-    assert not hasattr(document, 'filename') or document.filename is None
-    assert not hasattr(document, 'page_dimensions') or document.page_dimensions is None
+def test_checksum_service_does_not_create_documents():
+    """Test que ChecksumService no conoce ni construye la entidad Document (SRP)."""
+    import app.application.services.checksum_service as module
+    import inspect
+
+    source = inspect.getsource(module)
+
+    assert "from app.domain.models.document" not in source
+    assert "Document(" not in source

@@ -39,18 +39,18 @@ def test_get_document_by_id_not_found():
 
 def test_create_document_success():
     """Test que POST /documents/upload crea un documento exitosamente."""
-    from app.application.dto.document_dto import ChecksumValidationResult
+    from app.application.dto.document_dto import IngestionResult
     from app.domain.models.document import Document
     from datetime import datetime
-    
+
     doc = Document(
         id="new-doc-123",
         checksum="new-checksum",
         extracted_text="nuevo texto",
         created_at=datetime.now()
     )
-    
-    validation_result = ChecksumValidationResult(
+
+    validation_result = IngestionResult(
         is_valid=True,
         document=doc,
         error_message=None
@@ -64,9 +64,9 @@ def test_create_document_success():
 
 def test_create_document_duplicate_checksum():
     """Test que POST /documents/ retorna 409 si el checksum existe."""
-    from app.application.dto.document_dto import ChecksumValidationResult
-    
-    validation_result = ChecksumValidationResult(
+    from app.application.dto.document_dto import IngestionResult
+
+    validation_result = IngestionResult(
         is_valid=False,
         document=None,
         error_message="Document with checksum abc123 already exists (409 Conflict)"

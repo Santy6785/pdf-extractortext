@@ -95,7 +95,7 @@ def _raise_conflict_if_invalid(result) -> None:
     Lanza HTTP 409 si el resultado de validación de checksum no es válido.
 
     Args:
-        result: ChecksumValidationResult del servicio de documentos
+        result: IngestionResult del servicio de ingesta de documentos
 
     Raises:
         HTTPException: 409 si el documento ya existe

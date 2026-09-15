@@ -60,7 +60,15 @@ class DocumentListDTO:
 
 @dataclass
 class ChecksumValidationResult:
-    """Resultado de la validación de checksum."""
+    """Resultado de la validación de checksum (sin crear entidades)."""
+    is_valid: bool
+    checksum: Optional[str]
+    error_message: Optional[str]
+
+
+@dataclass
+class IngestionResult:
+    """Resultado de la ingesta de un documento (incluye la entidad creada)."""
     is_valid: bool
     document: Optional[Any]
     error_message: Optional[str]

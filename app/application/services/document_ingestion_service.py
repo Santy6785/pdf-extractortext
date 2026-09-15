@@ -5,6 +5,7 @@ y la persistencia de documentos nuevos.
 """
 
 from typing import Optional
+from datetime import datetime
 
 from app.domain.models.document import Document
 from app.domain.repositories.document_repository import DocumentRepository
@@ -12,7 +13,7 @@ from app.application.pdf.pdf_extractor import PdfExtractor, PdfProcessingResult
 from app.application.services.checksum_service import ChecksumService
 from app.application.dto.document_dto import (
     DocumentCreateDTO,
-    ChecksumValidationResult
+    IngestionResult
 )
 
 
@@ -46,7 +47,7 @@ class DocumentIngestionService:
         self,
         file_bytes: bytes,
         filename: str
-    ) -> ChecksumValidationResult:
+    ) -> IngestionResult:
         """
         Procesa un archivo PDF y lo guarda si es único.
 
@@ -55,7 +56,7 @@ class DocumentIngestionService:
             filename: Nombre del archivo (solo para logging, no se almacena)
 
         Returns:
-            Resultado de la validación y persistencia
+            Resultado de la validación y persistencia con el documento creado
 
         Raises:
             DocumentServiceError: Si hay error al procesar el PDF
@@ -67,18 +68,27 @@ class DocumentIngestionService:
             # 2. Construir DTO de creación con el checksum ya calculado
             create_dto = self._build_create_dto(file_bytes, pdf_result)
 
-            # 3. Validar checksum y crear documento (reutiliza el checksum del DTO)
-            validation_result = await self._checksum_service.validate_and_create_document(
-                create_dto
-            )
+            # 3. Validar unicidad del checksum (no crea la entidad)
+            validation_result = await self._checksum_service.validate(create_dto)
 
             if not validation_result.is_valid:
-                return validation_result
+                return IngestionResult(
+                    is_valid=False,
+                    document=None,
+                    error_message=validation_result.error_message
+                )
 
-            # 4. Persistir el documento
-            document = await self._save_document(validation_result.document)
+            # 4. Construir el documento de dominio (id generado por el repositorio)
+            document = Document(
+                checksum=validation_result.checksum,
+                extracted_text=create_dto.extracted_text,
+                created_at=datetime.now()
+            )
 
-            return ChecksumValidationResult(
+            # 5. Persistir el documento
+            document = await self._save_document(document)
+
+            return IngestionResult(
                 is_valid=True,
                 document=document,
                 error_message=None

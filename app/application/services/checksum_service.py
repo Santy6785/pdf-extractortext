@@ -1,28 +1,25 @@
 """
-Servicio de aplicación para validación de checksum y unicidad de documentos.
+Servicio de aplicación para cálculo de checksum y validación de unicidad.
+No crea entidades de dominio; esa responsabilidad pertenece a DocumentIngestionService.
 """
 
 import hashlib
 from typing import Optional
-from datetime import datetime
-from bson import ObjectId
 
 from app.application.dto.document_dto import (
     DocumentCreateDTO,
     ChecksumValidationResult
 )
-from app.domain.models.document import Document
 from app.domain.repositories.document_repository import DocumentRepository
 
 
 class ChecksumService:
     """
     Servicio que encapsula la lógica de negocio para validación de checksum.
-    
+
     Responsabilidades:
     - Calcular checksum SHA-256 de archivos
     - Verificar unicidad de documentos
-    - Crear documentos válidos
     """
     
     def __init__(self, repository: Optional[DocumentRepository] = None):
@@ -62,40 +59,34 @@ class ChecksumService:
         existing = await self._repository.find_by_checksum(checksum)
         return existing is None
     
-    async def validate_and_create_document(
+    async def validate(
         self,
         dto: DocumentCreateDTO
     ) -> ChecksumValidationResult:
         """
-        Valida la unicidad del checksum y crea un documento si es válido.
-        
+        Valida la unicidad del checksum de un documento a crear.
+
         Args:
-            dto: DTO con los datos del documento a crear. Si incluye checksum,
+            dto: DTO con los datos del documento. Si incluye checksum,
                  se usa ese valor; si no, se calcula desde file_bytes.
-             
+
         Returns:
-            Resultado de la validación con el documento creado o mensaje de error
+            Resultado de la validación con el checksum validado
+            o mensaje de error si es duplicado
         """
         # Usar checksum pre-calculado si está disponible, sino calcularlo
         checksum = dto.checksum if dto.checksum is not None else self.calculate_checksum(dto.file_bytes)
-        
+
         # Verificar unicidad
         if not await self.is_checksum_unique(checksum):
             return ChecksumValidationResult(
                 is_valid=False,
-                document=None,
+                checksum=None,
                 error_message=f"Document with checksum {checksum} already exists (409 Conflict)"
             )
-        
-        # Crear documento de dominio (id será generado por el repositorio al guardar)
-        document = Document(
-            checksum=checksum,
-            extracted_text=dto.extracted_text,
-            created_at=datetime.now()
-        )
-        
+
         return ChecksumValidationResult(
             is_valid=True,
-            document=document,
+            checksum=checksum,
             error_message=None
         )
