@@ -12,7 +12,7 @@ def test_calculate_checksum_sha256():
     """Test que calcula correctamente el checksum SHA-256."""
     from app.application.services.checksum_service import ChecksumService
     
-    service = ChecksumService()
+    service = ChecksumService(repository=MagicMock())
     test_bytes = b"test content for checksum"
     
     expected_checksum = hashlib.sha256(test_bytes).hexdigest()
@@ -146,7 +146,7 @@ def test_checksum_uniqueness():
     """Test que contenidos diferentes producen checksums diferentes."""
     from app.application.services.checksum_service import ChecksumService
     
-    service = ChecksumService()
+    service = ChecksumService(repository=MagicMock())
     
     content1 = b"content A"
     content2 = b"content B"
@@ -162,7 +162,7 @@ def test_checksum_consistency():
     """Test que el mismo contenido siempre produce el mismo checksum."""
     from app.application.services.checksum_service import ChecksumService
     
-    service = ChecksumService()
+    service = ChecksumService(repository=MagicMock())
     content = b"consistent content"
     
     checksum1 = service.calculate_checksum(content)
@@ -181,3 +181,10 @@ def test_checksum_service_does_not_create_documents():
 
     assert "from app.domain.models.document" not in source
     assert "Document(" not in source
+
+def test_checksum_service_requires_repository():
+    '''Test que ChecksumService no puede instanciarse sin repositorio.'''
+    from app.application.services.checksum_service import ChecksumService
+
+    with pytest.raises(TypeError):
+        ChecksumService()

@@ -4,7 +4,6 @@ No crea entidades de dominio; esa responsabilidad pertenece a DocumentIngestionS
 """
 
 import hashlib
-from typing import Optional
 
 from app.application.dto.document_dto import (
     DocumentCreateDTO,
@@ -22,10 +21,10 @@ class ChecksumService:
     - Verificar unicidad de documentos
     """
     
-    def __init__(self, repository: Optional[DocumentRepository] = None):
+    def __init__(self, repository: DocumentRepository):
         """
-        Inicializa el servicio con un repositorio opcional.
-        
+        Inicializa el servicio con un repositorio.
+
         Args:
             repository: Repositorio de documentos para verificar unicidad
         """
@@ -53,9 +52,6 @@ class ChecksumService:
         Returns:
             True si el checksum es único (no existe), False si ya existe
         """
-        if self._repository is None:
-            return True
-            
         existing = await self._repository.find_by_checksum(checksum)
         return existing is None
     
