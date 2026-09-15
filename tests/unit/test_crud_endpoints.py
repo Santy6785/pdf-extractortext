@@ -26,17 +26,6 @@ def test_get_document_by_id_returns_single_document():
     assert response.extracted_text == "contenido específico"
 
 
-def test_get_document_by_id_not_found():
-    """Test que GET /documents/{id} retorna 404 si no existe."""
-    # Este test verifica el manejo de casos donde el documento no existe
-    document_id = "non-existent-id"
-    
-    # Simular respuesta None del servicio
-    result = None
-    
-    assert result is None
-
-
 def test_create_document_success():
     """Test que POST /documents/upload crea un documento exitosamente."""
     from app.application.dto.document_dto import IngestionResult
@@ -77,20 +66,7 @@ def test_create_document_duplicate_checksum():
     assert "409 Conflict" in validation_result.error_message
 
 
-def test_delete_document_success():
-    """Test que DELETE /documents/{id} elimina exitosamente."""
-    # Simular eliminación exitosa
-    deleted = True
-    
-    assert deleted is True
 
-
-def test_delete_document_not_found():
-    """Test que DELETE /documents/{id} retorna 404 si no existe."""
-    # Simular documento no encontrado
-    deleted = False
-    
-    assert deleted is False
 
 
 def test_document_schema_has_only_required_fields():
