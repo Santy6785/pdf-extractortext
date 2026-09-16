@@ -12,7 +12,7 @@ from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
 from ...application.pdf.pdf_extractor import PdfExtractor
-from ...application.pdf.pypdf_extractor import PypdfPdfExtractor, PdfMetadata
+from .pypdf_extractor import PypdfPdfExtractor, PdfMetadata
 
 
 class PdfService:
