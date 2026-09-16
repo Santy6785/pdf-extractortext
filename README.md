@@ -82,6 +82,10 @@ pdf-extractortext/
 └── README.md                  # Este archivo
 ```
 
+> 📐 **Documentación arquitectónica:** Los seams (puntos de desacople) del sistema y su estrategia
+> de testing están documentados en [`docs/CONTEXT.md`](docs/CONTEXT.md). Los diagramas UML están
+> disponibles en [`docs/diagramas/`](docs/diagramas/).
+
 ## Instalación y Configuración
 
 ### Prerrequisitos
