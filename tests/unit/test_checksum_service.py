@@ -188,3 +188,85 @@ def test_checksum_service_requires_repository():
 
     with pytest.raises(TypeError):
         ChecksumService()
+
+
+@pytest.mark.asyncio
+async def test_is_checksum_unique_returns_true_when_not_found():
+    """Test que is_checksum_unique retorna True si el checksum no existe."""
+    from app.application.services.checksum_service import ChecksumService
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(return_value=None)
+
+    service = ChecksumService(repository=mock_repo)
+    result = await service.is_checksum_unique("abc123")
+
+    assert result is True
+    mock_repo.find_by_checksum.assert_called_once_with("abc123")
+
+
+@pytest.mark.asyncio
+async def test_is_checksum_unique_returns_false_when_exists():
+    """Test que is_checksum_unique retorna False si el checksum ya existe."""
+    from app.application.services.checksum_service import ChecksumService
+    from app.domain.models.document import Document
+
+    existing_doc = Document(
+        id="doc-1",
+        checksum="dup-checksum",
+        extracted_text="texto",
+        created_at=datetime.now()
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(return_value=existing_doc)
+
+    service = ChecksumService(repository=mock_repo)
+    result = await service.is_checksum_unique("dup-checksum")
+
+    assert result is False
+    mock_repo.find_by_checksum.assert_called_once_with("dup-checksum")
+
+
+@pytest.mark.asyncio
+async def test_is_checksum_unique_with_empty_string():
+    """Test que el string vacío se consulta tal cual al repositorio."""
+    from app.application.services.checksum_service import ChecksumService
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(return_value=None)
+
+    service = ChecksumService(repository=mock_repo)
+    result = await service.is_checksum_unique("")
+
+    assert result is True
+    mock_repo.find_by_checksum.assert_called_once_with("")
+
+
+@pytest.mark.asyncio
+async def test_is_checksum_unique_with_invalid_format():
+    """Test que un hash con formato inválido se delega al repositorio sin validación."""
+    from app.application.services.checksum_service import ChecksumService
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(return_value=None)
+
+    service = ChecksumService(repository=mock_repo)
+    result = await service.is_checksum_unique("no-es-un-sha256!")
+
+    assert result is True
+    mock_repo.find_by_checksum.assert_called_once_with("no-es-un-sha256!")
+
+
+@pytest.mark.asyncio
+async def test_is_checksum_unique_propagates_repository_exception():
+    """Test que las excepciones del repositorio se propagan al llamador."""
+    from app.application.services.checksum_service import ChecksumService
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_checksum = AsyncMock(side_effect=ConnectionError("mongo caido"))
+
+    service = ChecksumService(repository=mock_repo)
+
+    with pytest.raises(ConnectionError, match="mongo caido"):
+        await service.is_checksum_unique("abc123")
