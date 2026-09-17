@@ -162,7 +162,7 @@ async def test_mongo_repository_find_all(mock_motor_collection):
     ]
 
     mock_cursor = MagicMock()
-    mock_cursor.to_list = AsyncMock(return_value=mock_docs)
+    mock_cursor.skip.return_value.limit.return_value.to_list = AsyncMock(return_value=mock_docs)
     mock_motor_collection.find.return_value = mock_cursor
 
     repository = MongoDocumentRepository(mock_motor_collection)
@@ -173,7 +173,7 @@ async def test_mongo_repository_find_all(mock_motor_collection):
     assert all(doc.checksum in ["cs1", "cs2"] for doc in result)
     # Verify pagination
     mock_motor_collection.find.return_value.skip.assert_called_once_with(0)
-    mock_motor_collection.find.return_value.limit.assert_called_once_with(20)
+    mock_cursor.skip.return_value.limit.assert_called_once_with(20)
 
 
 @pytest.mark.asyncio
@@ -191,7 +191,7 @@ async def test_mongo_repository_find_all_with_pagination(mock_motor_collection):
     ]
 
     mock_cursor = MagicMock()
-    mock_cursor.to_list = AsyncMock(return_value=mock_docs)
+    mock_cursor.skip.return_value.limit.return_value.to_list = AsyncMock(return_value=mock_docs)
     mock_motor_collection.find.return_value = mock_cursor
 
     repository = MongoDocumentRepository(mock_motor_collection)
@@ -200,7 +200,7 @@ async def test_mongo_repository_find_all_with_pagination(mock_motor_collection):
 
     assert len(result) == 1
     mock_motor_collection.find.return_value.skip.assert_called_once_with(5)
-    mock_motor_collection.find.return_value.limit.assert_called_once_with(10)
+    mock_cursor.skip.return_value.limit.assert_called_once_with(10)
 
 
 @pytest.mark.asyncio
@@ -316,3 +316,139 @@ async def test_mongo_repository_update_not_found():
     result = await repository.update(doc_id, document)
 
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_find_by_id_invalid_objectid():
+    """Test que retorna None ante ObjectIds invalidos sin consultar la coleccion."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+
+    collection = MagicMock()
+    collection.find_one = AsyncMock(return_value={"unexpected": "doc"})
+
+    repository = MongoDocumentRepository(collection)
+
+    assert await repository.find_by_id("id-invalido") is None
+    assert await repository.find_by_id("123") is None
+    assert await repository.find_by_id("..no-es-oid..") is None
+    collection.find_one.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_find_by_id_propagates_nothing_on_db_error():
+    """Test que errores de la coleccion en find_by_id devuelven None."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+
+    collection = MagicMock()
+    collection.find_one = AsyncMock(side_effect=ConnectionError("mongo caido"))
+
+    repository = MongoDocumentRepository(collection)
+
+    result = await repository.find_by_id(str(ObjectId()))
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_insert_does_not_include_id_for_new_document():
+    """Test que insertar un documento nuevo no incluye el campo _id."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    collection.insert_one = AsyncMock(
+        return_value=MagicMock(inserted_id=ObjectId())
+    )
+
+    repository = MongoDocumentRepository(collection)
+
+    document = Document(
+        checksum="new-doc",
+        extracted_text="texto nuevo",
+        created_at=datetime.now(),
+        id=None
+    )
+
+    await repository.insert(document)
+
+    inserted = collection.insert_one.call_args[0][0]
+    assert "_id" not in inserted
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_insert_includes_id_when_present():
+    """Test que insertar un documento con id lo incluye como ObjectId."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    doc_id = str(ObjectId())
+    collection.insert_one = AsyncMock(
+        return_value=MagicMock(inserted_id=ObjectId(doc_id))
+    )
+
+    repository = MongoDocumentRepository(collection)
+
+    document = Document(
+        checksum="with-id",
+        extracted_text="texto",
+        created_at=datetime.now(),
+        id=doc_id
+    )
+
+    await repository.insert(document)
+
+    inserted = collection.insert_one.call_args[0][0]
+    assert inserted["_id"] == ObjectId(doc_id)
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_update_uses_id_filter_and_set_operator():
+    """Test que update filtra por _id y usa el operador $set sin enviar _id."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    collection.update_one = AsyncMock(return_value=MagicMock(matched_count=1))
+
+    repository = MongoDocumentRepository(collection)
+
+    doc_id = str(ObjectId())
+    document = Document(
+        checksum="cs-upd",
+        extracted_text="texto actualizado",
+        created_at=datetime.now(),
+        id=doc_id
+    )
+
+    result = await repository.update(doc_id, document)
+
+    assert result is True
+    filt, update = collection.update_one.call_args[0]
+    assert filt == {"_id": ObjectId(doc_id)}
+    assert set(update.keys()) == {"$set"}
+    assert "_id" not in update["$set"]
+    assert update["$set"]["checksum"] == "cs-upd"
+    assert update["$set"]["extracted_text"] == "texto actualizado"
+
+
+@pytest.mark.asyncio
+async def test_mongo_repository_update_invalid_objectid_returns_false():
+    """Test que update con un id invalido retorna False sin tocar la coleccion."""
+    from app.infrastructure.persistence.mongo_repository import MongoDocumentRepository
+    from app.domain.models.document import Document
+
+    collection = MagicMock()
+    collection.update_one = AsyncMock()
+
+    repository = MongoDocumentRepository(collection)
+
+    document = Document(
+        checksum="cs",
+        extracted_text="texto",
+        created_at=datetime.now()
+    )
+
+    assert await repository.update("id-invalido", document) is False
+    assert await repository.update("123", document) is False
+    collection.update_one.assert_not_called()
