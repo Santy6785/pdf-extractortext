@@ -15,11 +15,25 @@ def test_calculate_checksum_sha256():
     service = ChecksumService(repository=MagicMock())
     test_bytes = b"test content for checksum"
     
-    expected_checksum = hashlib.sha256(test_bytes).hexdigest()
+    # Valor esperado precalculado (ground truth), no recalculado con la implementación
+    expected_checksum = "c8ce4e97a404b12b1d8f0e245f04ff607be1048b16d973c2f23bab86655c808b"
     result = service.calculate_checksum(test_bytes)
     
     assert result == expected_checksum
     assert len(result) == 64  # SHA-256 produce 64 caracteres hex
+
+
+def test_calculate_checksum_sha256_empty_input():
+    """Test que el checksum de un stream vacío coincide con el SHA-256 conocido de b""."""
+    from app.application.services.checksum_service import ChecksumService
+    
+    service = ChecksumService(repository=MagicMock())
+    
+    # Hash SHA-256 conocido del input vacío
+    expected_checksum = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    result = service.calculate_checksum(b"")
+    
+    assert result == expected_checksum
 
 
 @pytest.mark.asyncio
