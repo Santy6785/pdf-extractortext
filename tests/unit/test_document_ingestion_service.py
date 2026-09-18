@@ -86,10 +86,9 @@ async def test_ingestion_service_process_duplicate_checksum():
 
 @pytest.mark.asyncio
 async def test_ingestion_service_document_has_only_required_fields():
-    """Test que el documento creado tiene solo los 4 campos requeridos."""
+    """Test que el documento creado por la ingesta contiene los valores esperados."""
     from app.application.services.document_ingestion_service import DocumentIngestionService
     from app.application.pdf.pdf_extractor import PdfProcessingResult
-    from dataclasses import fields
 
     mock_repo = MagicMock()
     mock_repo.find_by_checksum = AsyncMock(return_value=None)
@@ -112,10 +111,7 @@ async def test_ingestion_service_document_has_only_required_fields():
     assert result.is_valid is True
     document = result.document
 
-    # Verificar que tiene exactamente 4 campos
-    document_fields = {f.name for f in fields(document)}
-    assert document_fields == {"id", "checksum", "extracted_text", "created_at"}
-
+    # La estructura del esquema (4 campos) se verifica en tests/unit/test_document.py
     # Verificar valores
     assert document.checksum == "abc123"
     assert document.extracted_text == "texto extraido"

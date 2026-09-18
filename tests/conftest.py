@@ -11,6 +11,10 @@ from unittest.mock import MagicMock, AsyncMock
 # Agregar el directorio raíz al path para importar app
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+# Campos del esquema del Document (fuente única de verdad para tests)
+# El contrato exhaustivo del modelo se verifica en tests/unit/test_document.py
+DOCUMENT_REQUIRED_FIELDS = {"id", "checksum", "extracted_text", "created_at"}
+
 
 @pytest.fixture(scope="session")
 def client():

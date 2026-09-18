@@ -112,11 +112,11 @@ def test_document_equality_by_checksum():
 
 
 def test_document_minimal_fields():
-    """Test que el documento tiene solo los 4 campos requeridos."""
+    """Test de contrato: el modelo Document tiene exactamente los 4 campos requeridos."""
     from app.domain.models.document import Document
     from dataclasses import fields
+    from tests.conftest import DOCUMENT_REQUIRED_FIELDS
     
-    document_fields = fields(Document)
-    field_names = {f.name for f in document_fields}
+    field_names = {f.name for f in fields(Document)}
     
-    assert field_names == {"id", "checksum", "extracted_text", "created_at"}
+    assert field_names == DOCUMENT_REQUIRED_FIELDS

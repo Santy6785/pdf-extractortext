@@ -69,35 +69,11 @@ def test_create_document_duplicate_checksum():
 
 
 
-def test_document_schema_has_only_required_fields():
-    """Test que el esquema tiene solo checksum, extracted_text y created_at."""
-    from app.domain.models.document import Document
-    from dataclasses import fields
-    from datetime import datetime
-    
-    doc = Document(
-        id="doc-123",
-        checksum="abc123",
-        extracted_text="contenido del documento",
-        created_at=datetime.now()
-    )
-    
-    # Verificar campos del documento
-    document_fields = {f.name for f in fields(doc)}
-    
-    # Debe tener exactamente estos 4 campos
-    expected_fields = {"id", "checksum", "extracted_text", "created_at"}
-    assert document_fields == expected_fields
-    
-    # No debe tener campos adicionales
-    assert "filename" not in document_fields
-    assert "page_dimensions" not in document_fields
-
-
 def test_document_to_dict_contains_only_schema_fields():
     """Test que to_dict() solo incluye los campos del esquema."""
     from app.domain.models.document import Document
     from datetime import datetime
+    from tests.conftest import DOCUMENT_REQUIRED_FIELDS
     
     doc = Document(
         id="doc-456",
@@ -108,13 +84,6 @@ def test_document_to_dict_contains_only_schema_fields():
     
     doc_dict = doc.to_dict()
     
-    # Solo debe tener estos campos
-    assert "id" in doc_dict
-    assert "checksum" in doc_dict
-    assert "extracted_text" in doc_dict
-    assert "created_at" in doc_dict
-    assert len(doc_dict) == 4
-    
-    # No debe tener campos adicionales
-    assert "filename" not in doc_dict
-    assert "page_dimensions" not in doc_dict
+    # Debe serializar exactamente los campos del esquema (la estructura del modelo
+    # se verifica en tests/unit/test_document.py)
+    assert set(doc_dict) == DOCUMENT_REQUIRED_FIELDS
