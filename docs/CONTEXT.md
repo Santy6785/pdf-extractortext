@@ -250,7 +250,8 @@ class InMemoryRepository(DocumentRepository):
 **Acuerdos del equipo:**
 
 1. Toda nueva funcionalidad entra por TDD: test contra el seam correspondiente primero (red),
-   implementación mínima después (green), refactor final.
+   implementación mínima después (green), refactor final. La metodología completa del ciclo
+   Red-Green-Refactor y sus reglas de compromiso están formalizadas en `CONTRIBUTING.md`.
 2. Ningún test unitario toca la red, el disco, MongoDB ni archivos PDF pesados.
 3. Las implementaciones de infraestructura se verifican con tests de integración separados
    (`tests/integration/`).
