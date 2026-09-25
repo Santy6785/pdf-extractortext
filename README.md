@@ -69,17 +69,73 @@ El proyecto sigue **Clean Architecture** con las siguientes capas:
 ```
 pdf-extractortext/
 ├── app/
-│   ├── api/                    # Endpoints HTTP y dependencias
-│   ├── application/            # Casos de uso y DTOs
-│   ├── domain/                 # Entidades e interfaces
-│   ├── infrastructure/         # Implementaciones concretas
-│   ├── services/               # Servicios de dominio
-│   └── config/                 # Configuración
-├── tests/                      # Tests unitarios e integración
-├── docker-compose.yml          # Orquestación de servicios
-├── Dockerfile                  # Imagen de contenedor
-├── pyproject.toml             # Configuración del proyecto
-└── README.md                  # Este archivo
+│   ├── main.py                          # Punto de entrada y factory create_app
+│   ├── api/                             # Capa de adaptadores HTTP
+│   │   ├── routes.py                    # Endpoints de la API (/api/v1/...)
+│   │   └── dependencies.py              # Composition root: wiring con DI
+│   ├── application/                     # Capa de aplicación (casos de uso)
+│   │   ├── config_service.py            # Protocol ConfigService y su implementación
+│   │   ├── dto/
+│   │   │   └── document_dto.py          # DTOs (incluye ChecksumValidationResult
+│   │   │                                #   e IngestionResult)
+│   │   ├── pdf/
+│   │   │   └── pdf_extractor.py         # Port: Protocol PdfExtractor
+│   │   └── services/
+│   │       ├── checksum_service.py             # Cálculo SHA-256 y unicidad
+│   │       ├── document_ingestion_service.py   # Pipeline de ingesta de PDFs
+│   │       └── document_service.py             # CRUD de documentos existentes
+│   ├── domain/                          # Capa de dominio
+│   │   ├── exceptions.py                # DocumentNotFoundError, DomainError
+│   │   ├── models/
+│   │   │   └── document.py              # Entidad Document
+│   │   └── repositories/
+│   │       └── document_repository.py   # Interfaz abstracta DocumentRepository
+│   ├── infrastructure/                  # Implementaciones concretas
+│   │   ├── pdf/
+│   │   │   ├── pypdf_extractor.py       # Adaptador pypdf del port PdfExtractor
+│   │   │   └── pdf_service.py           # ⚠️ LEGACY: versión redundante, pendiente
+│   │   │                                #   de eliminación
+│   │   └── persistence/
+│   │       ├── database.py              # Conexión singleton a MongoDB (motor)
+│   │       └── mongo_repository.py      # Implementación MongoDocumentRepository
+│   ├── services/
+│   │   └── pdf_service.py               # ⚠️ LEGACY: módulo redundante, pendiente
+│   │                                    #   de eliminación; no forma parte de la
+│   │                                    #   arquitectura actual
+│   └── config/
+│       └── settings.py                  # Settings (pydantic-settings, 12-Factor)
+├── tests/                               # Tests con pytest
+│   ├── conftest.py                      # Fixtures compartidos
+│   ├── test_main.py                     # Smoke tests de la aplicación
+│   ├── unit/                            # Tests unitarios
+│   │   ├── test_checksum_service.py
+│   │   ├── test_crud_endpoints.py
+│   │   ├── test_database.py
+│   │   ├── test_document.py
+│   │   ├── test_document_ingestion_service.py
+│   │   ├── test_document_service.py
+│   │   ├── test_mongo_repository.py
+│   │   ├── test_pagination_default.py
+│   │   ├── test_pdf_extractor.py
+│   │   └── test_repository.py
+│   └── integration/                     # Tests de integración
+│       ├── test_documents_crud_http.py
+│       ├── test_routes_error_mapping.py
+│       └── test_upload_pdf.py
+├── frontend/
+│   └── index.html                       # Interfaz web (drag & drop)
+├── nginx/
+│   └── nginx.conf                       # Reverse proxy para Docker
+├── docs/
+│   ├── CONTEXT.md                       # Documentación de contexto y seams
+│   └── diagramas/                       # Diagramas UML (PlantUML)
+├── docker-compose.yml                   # Orquestación de servicios
+├── Dockerfile                           # Imagen del backend
+├── Dockerfile.frontend                  # Imagen del frontend
+├── pyproject.toml                       # Configuración del proyecto y deps
+├── uv.lock                              # Lockfile de UV
+├── .env.example                         # Ejemplo de variables de entorno
+└── README.md                            # Este archivo
 ```
 
 > 📐 **Documentación arquitectónica:** Los seams (puntos de desacople) del sistema y su estrategia
@@ -156,6 +212,9 @@ DEBUG=false
 
 # PDF Configuration
 MAX_PDF_SIZE_MB=10
+
+# Pagination
+DEFAULT_PAGE_SIZE=20
 ```
 
 ## Uso
