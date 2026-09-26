@@ -12,6 +12,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "motor>=3.3.0",
     "pydantic-settings>=2.1.0",
+    "pymupdf>=1.28.2",
 ]
 
 [project.optional-dependencies]
