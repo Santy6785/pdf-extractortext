@@ -151,7 +151,7 @@ package "Infraestructura" <<Infraestructura>> {
         + mongodb_url: str
         + db_name: str
         + app_name: str
-        + version: str
+        + app_version: str
         + max_pdf_size_mb: int
     }
 }
