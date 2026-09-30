@@ -24,11 +24,26 @@ def client():
     """
     from app.main import create_app
     from app.infrastructure.persistence.database import database
-    
-    # Mockear la conexión a base de datos
+
+  # Mockear la colección con métodos asíncronos
+    mock_insert_result = MagicMock()
+    mock_insert_result.inserted_id = "65f1a2b3c4d5e6f7a8b9c0d1"
+
+    mock_coll = MagicMock()
+    mock_coll.insert_one = AsyncMock(return_value=mock_insert_result)
+    mock_coll.find_one = AsyncMock(return_value=None)
+    mock_coll.find = MagicMock()
+    mock_coll.delete_one = AsyncMock()
+    mock_coll.count_documents = AsyncMock(return_value=0)
+
+    # Mockear la base de datos para que devuelva la colección asíncrona
+    mock_db = MagicMock()
+    mock_db.__getitem__.return_value = mock_coll
+    mock_db.get_collection.return_value = mock_coll
+
     database._client = MagicMock()
-    database._db = MagicMock()
-    
+    database._db = mock_db
+
     app = create_app()
     return TestClient(app)
 
