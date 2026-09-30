@@ -1,8 +1,8 @@
 @startuml clases
 
-' ============================================================================
+' ==============================================================================
 ' CONFIGURACIÓN VISUAL
-' ============================================================================
+' ==============================================================================
 skinparam backgroundColor #FEFEFE
 skinparam classAttributeIconSize 0
 skinparam class {
@@ -18,9 +18,9 @@ skinparam class {
 
 title Diagrama de Clases del Sistema\nPDF Extractor API
 
-' ============================================================================
+' ==============================================================================
 ' CAPA DE DOMINIO
-' ============================================================================
+' ==============================================================================
 
 package "Dominio" <<Dominio>> {
 
@@ -42,26 +42,11 @@ package "Dominio" <<Dominio>> {
         + delete(id: str): bool
     }
 
-    class PdfService {
-        + process_pdf(bytes: bytes, filename: str): PdfProcessingResult
-        - _calculate_checksum(bytes: bytes): str
-        - _extract_text(bytes: bytes): str
-    }
-
-    class PdfProcessingResult {
-        + filename: str
-        + checksum: str
-        + extracted_text: str
-    }
-
-    class PdfProcessingError {
-        + message: str
-    }
 }
 
-' ============================================================================
+' ==============================================================================
 ' CAPA DE APLICACIÓN
-' ============================================================================
+' ==============================================================================
 
 package "Aplicación" <<Aplicacion>> {
 
@@ -119,11 +104,27 @@ package "Aplicación" <<Aplicacion>> {
     }
 }
 
-' ============================================================================
+' ==============================================================================
 ' CAPA DE INFRAESTRUCTURA
-' ============================================================================
+' ==============================================================================
 
 package "Infraestructura" <<Infraestructura>> {
+
+    class PdfService <<Adapter>> {
+        + process_pdf(bytes: bytes, filename: str): PdfProcessingResult
+        - _calculate_checksum(bytes: bytes): str
+        - _extract_text(bytes: bytes): str
+    }
+
+    class PdfProcessingResult {
+        + filename: str
+        + checksum: str
+        + extracted_text: str
+    }
+
+    class PdfProcessingError {
+        + message: str
+    }
 
     class MongoDocumentRepository {
         - collection: AsyncIOMotorCollection
@@ -155,9 +156,9 @@ package "Infraestructura" <<Infraestructura>> {
     }
 }
 
-' ============================================================================
+' ==============================================================================
 ' CAPA DE INTERFAZ / API
-' ============================================================================
+' ==============================================================================
 
 package "API" <<Interfaz>> {
 
@@ -181,9 +182,9 @@ package "API" <<Interfaz>> {
     }
 }
 
-' ============================================================================
+' ==============================================================================
 ' RELACIONES PRINCIPALES
-' ============================================================================
+' ==============================================================================
 
 ' -- Inheritance --
 MongoDocumentRepository ..|> DocumentRepository
