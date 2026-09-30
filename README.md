@@ -69,6 +69,7 @@ El proyecto sigue **Clean Architecture** con las siguientes capas:
 ```
 pdf-extractortext/
 ├── app/
+│   ├── __init__.py
 │   ├── main.py                          # Punto de entrada y factory create_app
 │   ├── api/                             # Capa de adaptadores HTTP
 │   │   ├── routes.py                    # Endpoints de la API (/api/v1/...)
@@ -76,14 +77,13 @@ pdf-extractortext/
 │   ├── application/                     # Capa de aplicación (casos de uso)
 │   │   ├── config_service.py            # Protocol ConfigService y su implementación
 │   │   ├── dto/
-│   │   │   └── document_dto.py          # DTOs (incluye ChecksumValidationResult
-│   │   │                                #   e IngestionResult)
+│   │   │   └── document_dto.py          # DTOs (ChecksumValidationResult e IngestionResult)
 │   │   ├── pdf/
 │   │   │   └── pdf_extractor.py         # Port: Protocol PdfExtractor
 │   │   └── services/
-│   │       ├── checksum_service.py             # Cálculo SHA-256 y unicidad
-│   │       ├── document_ingestion_service.py   # Pipeline de ingesta de PDFs
-│   │       └── document_service.py             # CRUD de documentos existentes
+│   │       ├── checksum_service.py      # Cálculo SHA-256 y unicidad
+│   │       ├── document_ingestion_service.py # Pipeline de ingesta de PDFs
+│   │       └── document_service.py      # CRUD de documentos existentes
 │   ├── domain/                          # Capa de dominio
 │   │   ├── exceptions.py                # DocumentNotFoundError, DomainError
 │   │   ├── models/
@@ -92,19 +92,17 @@ pdf-extractortext/
 │   │       └── document_repository.py   # Interfaz abstracta DocumentRepository
 │   ├── infrastructure/                  # Implementaciones concretas
 │   │   ├── pdf/
-│   │   │   ├── pypdf_extractor.py       # Adaptador pypdf del port PdfExtractor
-│   │   │   └── pdf_service.py           # ⚠️ LEGACY: versión redundante, pendiente
-│   │   │                                #   de eliminación
+│   │   │   ├── pypdf_extractor.py       # Adaptador extractor de PDF
+│   │   │   └── pdf_service.py           # ⚠️ LEGACY: versión redundante, pendiente de eliminación
 │   │   └── persistence/
 │   │       ├── database.py              # Conexión singleton a MongoDB (motor)
 │   │       └── mongo_repository.py      # Implementación MongoDocumentRepository
 │   ├── services/
-│   │   └── pdf_service.py               # ⚠️ LEGACY: módulo redundante, pendiente
-│   │                                    #   de eliminación; no forma parte de la
-│   │                                    #   arquitectura actual
+│   │   └── pdf_service.py               # ⚠️ LEGACY: módulo redundante, pendiente de eliminación
 │   └── config/
 │       └── settings.py                  # Settings (pydantic-settings, 12-Factor)
 ├── tests/                               # Tests con pytest
+│   ├── __init__.py
 │   ├── conftest.py                      # Fixtures compartidos
 │   ├── test_main.py                     # Smoke tests de la aplicación
 │   ├── unit/                            # Tests unitarios
@@ -122,20 +120,24 @@ pdf-extractortext/
 │       ├── test_documents_crud_http.py
 │       ├── test_routes_error_mapping.py
 │       └── test_upload_pdf.py
+├── docs/
+│   ├── CONTEXT.md                       # Documentación de contexto y seams
+│   └── diagramas/                       # Diagramas UML (PlantUML)
 ├── frontend/
 │   └── index.html                       # Interfaz web (drag & drop)
 ├── nginx/
 │   └── nginx.conf                       # Reverse proxy para Docker
-├── docs/
-│   ├── CONTEXT.md                       # Documentación de contexto y seams
-│   └── diagramas/                       # Diagramas UML (PlantUML)
+├── .dockerignore
+├── .env.example                         # Ejemplo de variables de entorno
+├── .gitignore
+├── CONTRIBUTING.md                      # Pautas de desarrollo y ciclo Red-Green-Refactor
 ├── docker-compose.yml                   # Orquestación de servicios
 ├── Dockerfile                           # Imagen del backend
 ├── Dockerfile.frontend                  # Imagen del frontend
-├── pyproject.toml                       # Configuración del proyecto y deps
-├── uv.lock                              # Lockfile de UV
-├── .env.example                         # Ejemplo de variables de entorno
-└── README.md                            # Este archivo
+├── LICENSE
+├── pyproject.toml                       # Configuración del proyecto y dependencias
+├── README.md                            # Documentación principal
+└── uv.lock                              # Lockfile de dependencias con UV
 ```
 
 > 📐 **Documentación arquitectónica:** Los seams (puntos de desacople) del sistema y su estrategia
