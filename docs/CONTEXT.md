@@ -250,12 +250,30 @@ class InMemoryRepository(DocumentRepository):
 **Acuerdos del equipo:**
 
 1. Toda nueva funcionalidad entra por TDD: test contra el seam correspondiente primero (red),
-   implementación mínima después (green), refactor final.
+   implementación mínima después (green), refactor final. La metodología completa del ciclo
+   Red-Green-Refactor y sus reglas de compromiso están formalizadas en `CONTRIBUTING.md`.
 2. Ningún test unitario toca la red, el disco, MongoDB ni archivos PDF pesados.
 3. Las implementaciones de infraestructura se verifican con tests de integración separados
    (`tests/integration/`).
 4. Un nuevo seam (ej. cola de mensajes, servicio externo de IA) debe documentarse en este archivo
    antes o junto con su implementación.
+
+### Detalle de Seams Arquitectónicos Acordados
+
+1. **Seam de Persistencia / Repositorio**:
+   - **Contrato / Puerto**: Interfaz abstracta `DocumentRepository` (`app/domain/repositories/document_repository.py`).
+   - **Implementación Concreta**: `MongoDocumentRepository` (`app/infrastructure/persistence/mongo_repository.py`).
+   - **Estrategia**: Dobles en memoria (`InMemoryRepository` / Mocks) en `tests/unit/` para aislar MongoDB.
+
+2. **Seam de Extracción de Texto / PDF**:
+   - **Contrato / Puerto**: Protocolo `PdfExtractor` (`app/application/pdf/pdf_extractor.py`).
+   - **Implementación Concreta**: Adaptadores en `app/infrastructure/pdf/` (PyMuPDF / PyPDF).
+   - **Estrategia**: Mocks de extracción en `tests/unit/` sin procesar binarios pesados.
+
+3. **Seam de Configuración**:
+   - **Contrato / Puerto**: Protocolo `ConfigService` (`app/application/config_service.py`).
+   - **Implementación Concreta**: `Settings` (`app/config/settings.py`).
+   - **Estrategia**: Inyección de valores de prueba en memoria sin leer variables de entorno reales.
 
 ## 9. Referencias
 

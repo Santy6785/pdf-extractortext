@@ -131,3 +131,132 @@ async def test_document_service_delete_not_found():
     result = await service.delete("non-existent")
 
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_document_service_update_success():
+    """Test que actualiza el texto extraido de un documento exitosamente."""
+    from app.application.services.document_service import DocumentService
+    from app.domain.models.document import Document
+
+    doc = Document(
+        checksum="cs-upd",
+        extracted_text="texto viejo",
+        created_at=datetime.now(),
+        id="doc-upd"
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_id = AsyncMock(return_value=doc)
+    mock_repo.update = AsyncMock(return_value=True)
+
+    service = DocumentService(repository=mock_repo)
+    result = await service.update("doc-upd", "texto nuevo")
+
+    assert result is not None
+    assert result.id == "doc-upd"
+    assert result.checksum == "cs-upd"
+    assert result.extracted_text == "texto nuevo"
+    mock_repo.find_by_id.assert_called_once_with("doc-upd")
+    mock_repo.update.assert_called_once_with("doc-upd", doc)
+    assert doc.extracted_text == "texto nuevo"
+
+
+@pytest.mark.asyncio
+async def test_document_service_update_not_found():
+    """Test que retorna None al actualizar un documento inexistente."""
+    from app.application.services.document_service import DocumentService
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_id = AsyncMock(return_value=None)
+    mock_repo.update = AsyncMock(return_value=True)
+
+    service = DocumentService(repository=mock_repo)
+    result = await service.update("non-existent", "texto")
+
+    assert result is None
+    mock_repo.find_by_id.assert_called_once_with("non-existent")
+    mock_repo.update.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_document_service_update_not_modified():
+    """Test que retorna None cuando el repositorio no logra actualizar."""
+    from app.application.services.document_service import DocumentService
+    from app.domain.models.document import Document
+
+    doc = Document(
+        checksum="cs-fail",
+        extracted_text="texto",
+        created_at=datetime.now(),
+        id="doc-fail"
+    )
+
+    mock_repo = MagicMock()
+    mock_repo.find_by_id = AsyncMock(return_value=doc)
+    mock_repo.update = AsyncMock(return_value=False)
+
+    service = DocumentService(repository=mock_repo)
+    result = await service.update("doc-fail", "texto nuevo")
+
+    assert result is None
+    mock_repo.update.assert_called_once_with("doc-fail", doc)
+
+
+@pytest.mark.asyncio
+async def test_document_service_error_on_processing_failure():
+    """Test que DocumentServiceError se eleva ante fallas del extractor."""
+    from app.application.services.document_ingestion_service import (
+        DocumentIngestionService,
+        DocumentServiceError,
+    )
+
+    mock_repo = MagicMock()
+    mock_extractor = MagicMock()
+    mock_extractor.process_pdf.side_effect = ValueError("pdf corrupto")
+
+    service = DocumentIngestionService(
+        repository=mock_repo,
+        pdf_extractor=mock_extractor
+    )
+
+    with pytest.raises(DocumentServiceError) as exc_info:
+        await service.process_and_save(b"bytes", "doc.pdf")
+
+    assert "Error processing document" in str(exc_info.value)
+    assert "pdf corrupto" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_document_service_error_on_repository_failure():
+    """Test que DocumentServiceError se eleva ante fallas del repositorio."""
+    from app.application.services.document_ingestion_service import (
+        DocumentIngestionService,
+        DocumentServiceError,
+    )
+    from app.application.pdf.pdf_extractor import PdfProcessingResult
+
+    mock_repo = MagicMock()
+    mock_repo.insert = AsyncMock(side_effect=RuntimeError("mongo caido"))
+
+    mock_extractor = MagicMock()
+    mock_extractor.process_pdf.return_value = PdfProcessingResult(
+        extracted_text="texto",
+        checksum="cs-err"
+    )
+
+    mock_checksum = MagicMock()
+    validation = MagicMock(is_valid=True, checksum="cs-err")
+    mock_checksum.validate = AsyncMock(return_value=validation)
+
+    service = DocumentIngestionService(
+        repository=mock_repo,
+        pdf_extractor=mock_extractor,
+        checksum_service=mock_checksum
+    )
+
+    with pytest.raises(DocumentServiceError) as exc_info:
+        await service.process_and_save(b"bytes", "doc.pdf")
+
+    assert "Error processing document" in str(exc_info.value)
+    assert "mongo caido" in str(exc_info.value)

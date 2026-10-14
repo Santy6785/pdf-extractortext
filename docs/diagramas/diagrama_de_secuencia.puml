@@ -5,7 +5,7 @@ actor "User" as U
 participant "Web Interface\n(Frontend)" as FW
 participant "API\n(FastAPI Controller)" as API
 participant "Document\nService" as SD
-participant "PDF Service" as SP
+participant "PdfExtractor\n(PypdfPdfExtractor)" as SP
 participant "Checksum\nService" as SC
 participant "MongoDB\nRepository" as DB
 == Happy Path: Successful Processing ==
@@ -16,10 +16,10 @@ API -> API : validate_pdf_file()\n(content_type and extension)
 API -> API : Read bytes into memory\n(file.read())
 API -> API : Validate max size\nconfigured (max_pdf_size_mb)
 API -> SD : process_and_save(file_bytes, filename)
-SD -> SP : process_pdf(file_bytes, filename)
+SD -> SP : process_pdf(file_bytes)
 SP -> SP : Calculate SHA-256 checksum\n(hashlib.sha256)
 SP -> SP : Extract text with PdfReader\n(iterate pages)
-SP --> SD : PdfProcessingResult\n{checksum, extracted_text, page_dimensions}
+SP --> SD : PdfProcessingResult\n{checksum, extracted_text}
 SD -> SC : validate_and_create_document(\nDocumentCreateDTO)
 SC -> SC : calculate_checksum(file_bytes)
 SC -> DB : find_by_checksum(checksum)
@@ -44,7 +44,7 @@ FW -> API : POST /api/v1/documents/\nFormData {file}
 API -> API : validate_pdf_file() -> OK
 API -> API : Read bytes into memory -> OK
 API -> SD : process_and_save(file_bytes, filename)
-SD -> SP : process_pdf(file_bytes, filename)
+SD -> SP : process_pdf(file_bytes)
 SP -> SP : PdfReader raises PdfReadError
 SP --> SD : PdfProcessingError\n"Corrupted or unreadable PDF"
 SD --> API : DocumentServiceError
@@ -55,8 +55,8 @@ U -> FW : Uploads existing PDF
 FW -> API : POST /api/v1/documents/\nFormData {file}
 API -> API : validate_pdf_file() -> OK
 API -> SD : process_and_save(file_bytes, filename)
-SD -> SP : process_pdf(file_bytes, filename)
-SP --> SD : PdfProcessingResult
+SD -> SP : process_pdf(file_bytes)
+SP --> SD : PdfProcessingResult\n{checksum, extracted_text}
 SD -> SC : validate_and_create_document(dto)
 SC -> SC : calculate_checksum(file_bytes)
 SC -> DB : find_by_checksum(checksum)

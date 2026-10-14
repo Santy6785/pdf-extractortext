@@ -19,14 +19,17 @@ class DocumentRepository(ABC):
     
     @abstractmethod
     async def insert(self, document: Document) -> str:
-        """
-        Inserta un documento nuevo en la base de datos.
+        """Inserta un documento nuevo en el almacenamiento persistente.
 
         Args:
-            document: Documento a insertar
+            document: Entidad Document que contiene checksum, texto extraído
+                y fecha de creación.
 
         Returns:
-            ID del documento insertado
+            str: Identificador único generado por el motor de persistencia (ObjectId en string).
+
+        Raises:
+            DomainError: Si ocurre un error de persistencia o violación de unicidad de checksum.
         """
         pass
     
@@ -73,15 +76,17 @@ class DocumentRepository(ABC):
 
     @abstractmethod
     async def update(self, document_id: str, document: Document) -> bool:
-        """
-        Actualiza un documento existente por su ID.
+        """Actualiza un documento existente identificado por su document_id.
 
         Args:
-            document_id: ID del documento a actualizar
-            document: Documento con los nuevos datos
+            document_id: Identificador único en formato string del documento a modificar.
+            document: Entidad Document con los datos actualizados a persistir.
 
         Returns:
-            True si se actualizó, False si no existía
+            bool: True si el documento existía y fue modificado exitosamente; False si no se encontró.
+
+        Raises:
+            DomainError: Si el identificador no tiene formato válido o la operación de base de datos falla.
         """
         pass
 
