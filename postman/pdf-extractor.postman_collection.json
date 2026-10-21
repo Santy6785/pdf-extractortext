@@ -32,8 +32,15 @@
             },
             "url": {
               "raw": "{{api_base_url}}/api/v1/documents/upload",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "documents", "upload"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents",
+                "upload"
+              ]
             }
           }
         },
@@ -44,8 +51,14 @@
             "header": [],
             "url": {
               "raw": "{{api_base_url}}/api/v1/documents/",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "documents"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents"
+              ]
             }
           }
         },
@@ -56,8 +69,15 @@
             "header": [],
             "url": {
               "raw": "{{api_base_url}}/api/v1/documents/{{document_id}}",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "documents", "{{document_id}}"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents",
+                "{{document_id}}"
+              ]
             }
           }
         },
@@ -82,8 +102,15 @@
             },
             "url": {
               "raw": "{{api_base_url}}/api/v1/documents/{{document_id}}",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "documents", "{{document_id}}"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents",
+                "{{document_id}}"
+              ]
             }
           }
         },
@@ -94,8 +121,15 @@
             "header": [],
             "url": {
               "raw": "{{api_base_url}}/api/v1/documents/{{document_id}}",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "documents", "{{document_id}}"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "documents",
+                "{{document_id}}"
+              ]
             }
           }
         }
@@ -111,9 +145,54 @@
             "header": [],
             "url": {
               "raw": "{{api_base_url}}/api/v1/health",
-              "host": ["{{api_base_url}}"],
-              "path": ["api", "v1", "health"]
+              "host": [
+                "{{api_base_url}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "health"
+              ]
             }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Frontend",
+      "item": [
+        {
+          "name": "Get Frontend UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Obtiene la interfaz de usuario del microservicio front-end (index.html)"
+          }
+        },
+        {
+          "name": "Get Frontend Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Health check del microservicio front-end estático servido por Nginx"
           }
         }
       ]
@@ -121,13 +200,18 @@
   ],
   "variable": [
     {
+      "key": "base_url",
+      "value": "http://localhost",
+      "type": "string"
+    },
+    {
       "key": "api_base_url",
       "value": "http://localhost:8000",
       "type": "string"
     },
     {
       "key": "document_id",
-      "value": "65c4c3e1a8d5e2f0b8a0b9c1d2e3f4a5b6c7d8e9", 
+      "value": "65c4c3e1a8d5e2f0b8a0b9c1d2e3f4a5b6c7d8e9",
       "type": "string"
     },
     {
