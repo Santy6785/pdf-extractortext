@@ -15,10 +15,9 @@ services:
       - pdf-extractortext_pdf-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.api.rule=Host(`extract.universidad.localhost`) || (Host(`universidad.localhost`) && PathPrefix(`/api`))"
+      - "traefik.http.routers.api.rule=Host(`extract.universidad.localhost`)"
       - "traefik.http.routers.api.entrypoints=https"
       - "traefik.http.routers.api.tls=true"
-      - "traefik.http.routers.api.priority=100"
       - "traefik.http.services.api.loadbalancer.server.port=8000"
 
   # ------------------------------------------------------------------
@@ -29,16 +28,7 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: pdf-frontend
-    image: pdf-frontend:0.2.0
     restart: unless-stopped
-    stop_signal: SIGQUIT
-    stop_grace_period: 10s
-    environment:
-      - API_BASE_PATH=
-      - MAX_UPLOAD_MB=10
-      - REQUEST_TIMEOUT_MS=30000
-    expose:
-      - "80"
     networks:
       - pdf-extractortext_pdf-network
     labels:
@@ -46,16 +36,7 @@ services:
       - "traefik.http.routers.frontend.rule=Host(`universidad.localhost`)"
       - "traefik.http.routers.frontend.entrypoints=https"
       - "traefik.http.routers.frontend.tls=true"
-      - "traefik.http.routers.frontend.priority=10"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
-      - "traefik.http.services.frontend.loadbalancer.healthcheck.path=/health"
-      - "traefik.http.services.frontend.loadbalancer.healthcheck.interval=10s"
-      - "traefik.http.services.frontend.loadbalancer.healthcheck.timeout=3s"
-      # Middlewares de resiliencia
-      - "traefik.http.middlewares.frontend-retry.retry.attempts=3"
-      - "traefik.http.middlewares.frontend-retry.retry.initialinterval=500ms"
-      - "traefik.http.middlewares.frontend-cb.circuitbreaker.expression=NetworkErrorRatio() > 0.30 || ResponseCodeRatio(500, 600, 0, 600) > 0.25"
-      - "traefik.http.routers.frontend.middlewares=frontend-retry,frontend-cb"
 
 # ------------------------------------------------------------------
 # Red externa compartida con la infraestructura central
@@ -63,4 +44,3 @@ services:
 networks:
   pdf-extractortext_pdf-network:
     external: true
-    name: pdf-extractortext_pdf-network

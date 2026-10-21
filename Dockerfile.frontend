@@ -1,33 +1,17 @@
-# Dockerfile para el Microservicio Front-End
-# Nginx sirviendo contenido estático con configuración en runtime vía envsubst
+# Dockerfile para el Frontend - Nginx con proxy inverso al backend
 FROM nginx:alpine
 
-# Copiar la configuración global optimizada de Nginx (con logs JSON y /health)
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
+# Eliminar la configuración por defecto de Nginx
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copiar script de inicialización para generar config.js con envsubst antes de iniciar Nginx
-COPY nginx/40-generate-config.sh /docker-entrypoint.d/40-generate-config.sh
-RUN chmod +x /docker-entrypoint.d/40-generate-config.sh
+# Copiar nuestra configuración personalizada de Nginx
+COPY nginx/nginx.conf /etc/nginx/conf.d/
 
-# Copiar archivos estáticos del frontend
+# Copiar los archivos estáticos del frontend
 COPY frontend/ /usr/share/nginx/html/
 
-# Ajustar permisos para permitir ejecución segura con usuario sin privilegios
-RUN touch /tmp/nginx.pid && \
-    chown -R nginx:nginx /tmp/nginx.pid /var/cache/nginx /var/run /usr/share/nginx/html
-
-# Exponer el puerto HTTP
+# Exponir el puerto 80
 EXPOSE 80
 
-# Health check contra el endpoint /health nativo de Nginx
-HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -q -O - http://127.0.0.1/health || exit 1
-
-# Parada segura con SIGQUIT para finalizar conexiones en vuelo
-STOPSIGNAL SIGQUIT
-
-# Ejecutar como usuario sin privilegios
-USER nginx
-
-# Iniciar servidor Nginx
+# Iniciar Nginx
 CMD ["nginx", "-g", "daemon off;"]
